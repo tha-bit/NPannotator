@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NP Annotator</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1a18;--ink-2:#4a4a45;--ink-3:#8a8a82;--ink-4:#c4c4bc;
+  --paper:#faf9f6;--paper-2:#f2f1ec;--paper-3:#e8e7e0;
+  --accent:#2c5f8a;--accent-light:#e8f0f7;--accent-mid:#b8cfe4;
+  --green:#2d6a4f;--green-light:#e8f5ef;--green-mid:#95d5b2;
+  --amber:#7d4e0f;--amber-light:#fdf3e3;--amber-mid:#e8c97a;
+  --red:#8b2635;--red-light:#faebed;
+  --purple:#5b3fa0;--purple-light:#ede8f7;
+  --teal:#1a6a6a;--teal-light:#e0f4f4;--teal-mid:#5fbfbf;
+  --radius:6px;--radius-lg:10px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.07);
+  --border:1px solid var(--paper-3);
+}
+body{font-family:'Source Sans 3',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);line-height:1.6;min-height:100vh}
+
+/* ── Header ── */
+header{background:white;border-bottom:var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:200;gap:1rem}
+.logo{font-family:'Libre Baskerville',serif;font-size:17px;color:var(--ink);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+.session-strip{display:none;align-items:center;gap:.5rem;flex:1;justify-content:center;flex-wrap:wrap}
+.session-strip.visible{display:flex}
+.session-chip{display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;border:var(--border);background:var(--paper-2);font-size:12px;white-space:nowrap}
+.session-chip .lbl{color:var(--ink-3)}.session-chip .val{font-weight:600;color:var(--ink)}
+nav{display:flex;border:var(--border);border-radius:var(--radius);background:var(--paper-2);overflow:hidden;flex-shrink:0}
+.nb{padding:6px 15px;font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:500;color:var(--ink-3);background:transparent;border:none;border-right:var(--border);cursor:pointer;transition:all .15s}
+.nb:last-child{border-right:none}
+.nb:hover{color:var(--ink);background:var(--paper-3)}
+.nb.active{background:white;color:var(--accent);font-weight:600}
+.nb:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+main{width:100%;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1.25rem}
+.tab-panel{display:none;flex-direction:column;gap:1.5rem}
+.tab-panel.active{display:flex}
+
+/* ── Cards ── */
+.card{background:white;border:var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+.card-header{padding:.9rem 1.5rem;border-bottom:var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.card-title{font-family:'Libre Baskerville',serif;font-size:14px;color:var(--ink-2);font-weight:400}
+.card-body{padding:1.25rem 1.5rem}
+.section-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.5rem}
+
+/* ── Upload ── */
+.upload-zone{border:2px dashed var(--paper-3);border-radius:var(--radius-lg);padding:1.75rem 2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--paper-2)}
+.upload-zone:hover{border-color:var(--accent-mid);background:var(--accent-light)}
+.upload-zone svg{width:28px;height:28px;margin:0 auto .5rem;color:var(--ink-4);display:block}
+.upload-zone p{font-size:14px;color:var(--ink-3)}
+
+/* ── Inputs ── */
+input[type=text],input[type=search],select,textarea{padding:8px 12px;border:var(--border);border-radius:var(--radius);font-family:'Source Sans 3',sans-serif;font-size:14px;color:var(--ink);background:white;width:100%;outline:none;transition:border-color .15s,box-shadow .15s;appearance:none}
+input[type=text]:focus,select:focus,textarea:focus,input[type=search]:focus{border-color:var(--accent-mid);box-shadow:0 0 0 3px var(--accent-light)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8a82' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.field-group{display:flex;flex-direction:column;gap:5px}
+.field-label{font-size:13px;font-weight:500;color:var(--ink-2)}
+.field-hint{font-size:12px;color:var(--ink-3)}
+.required-star{color:var(--red);margin-left:2px}
+
+/* ── Buttons ── */
+.btn{padding:8px 18px;border-radius:var(--radius);font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;border:var(--border);background:white;color:var(--ink-2);transition:all .15s}
+.btn:hover{background:var(--paper-2);color:var(--ink)}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:white;border-color:var(--accent)}
+.btn-primary:hover{background:#22506f;color:white}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--ink-3)}
+.btn-ghost:hover{background:var(--paper-2);color:var(--ink)}
+.btn-danger{color:var(--red);border-color:#e8c4c9}
+.btn-danger:hover{background:var(--red-light)}
+.btn-teal{background:var(--teal);color:white;border-color:var(--teal)}
+.btn-teal:hover{background:#145252;color:white}
+.btn-amber{background:var(--amber);color:white;border-color:var(--amber)}
+.btn-amber:hover{background:#633806;color:white}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.action-row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+
+/* ══ SETUP ══ */
+#setup-screen{max-width:740px;margin:2rem auto;width:100%}
+.step-card{background:white;border:var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.25rem;transition:opacity .2s}
+.step-card.locked{opacity:.45;pointer-events:none}
+.step-header{padding:.9rem 1.5rem;border-bottom:var(--border);display:flex;align-items:center;gap:12px;background:var(--paper-2)}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:white;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
+.step-num.done{background:var(--green)}
+.step-title{font-family:'Libre Baskerville',serif;font-size:14px;color:var(--ink);font-weight:400}
+.step-subtitle{font-size:12px;color:var(--ink-3);margin-left:auto}
+.step-body{padding:1.25rem 1.5rem}
+.col-map-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.map-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;margin-bottom:3px}
+.badge-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.col-table-wrap{margin-top:.75rem;overflow-x:auto;border:var(--border);border-radius:var(--radius);max-height:200px;overflow-y:auto}
+.col-table{width:100%;border-collapse:collapse;font-size:13px}
+.col-table thead{position:sticky;top:0;z-index:2}
+.col-table th{padding:7px 12px;background:var(--paper-2);border-bottom:var(--border);text-align:left;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.col-table th.role-data{background:var(--accent-light);color:var(--accent)}
+.col-table th.role-lang{background:var(--green-light);color:var(--green)}
+.col-table th.role-code{background:var(--amber-light);color:var(--amber)}
+.col-table th.role-context{background:var(--purple-light);color:var(--purple)}
+.col-table td{padding:6px 12px;border-bottom:var(--border);color:var(--ink-3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.col-table td.role-data{color:var(--ink);font-weight:500}
+.col-table td.role-lang{color:var(--green)}
+.col-table td.role-code{color:var(--amber)}
+.col-table td.role-context{color:var(--purple)}
+.col-table tr:last-child td{border-bottom:none}
+.col-legend{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem;font-size:12px}
+.legend-item{display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;border:var(--border);background:white}
+.setup-actions{display:flex;justify-content:flex-end;align-items:center;gap:.75rem;margin-top:1.5rem;padding-top:1.25rem;border-top:var(--border)}
+.setup-msg{font-size:13px;color:var(--ink-3);margin-right:auto}
+
+/* ══ ANNOTATE LAYOUT ══ */
+.annotate-layout{
+  display:grid;
+  grid-template-columns:minmax(160px,200px) minmax(260px,1.5fr) minmax(180px,1fr) minmax(180px,1fr);
+  gap:1rem;
+  align-items:start;
+  min-width:0;
+}
+.row-list{display:flex;flex-direction:column;gap:3px;max-height:min(400px,60vh);overflow-y:auto}
+.row-list::-webkit-scrollbar{width:5px}
+.row-list::-webkit-scrollbar-thumb{background:var(--paper-3);border-radius:3px}
+.row-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent;transition:all .12s;min-width:0}
+.row-item:hover{background:var(--paper-2)}
+.row-item.active{background:var(--accent-light);border-color:var(--accent-mid)}
+.row-num{font-size:11px;color:var(--ink-4);min-width:22px;font-family:'Libre Baskerville',serif;flex-shrink:0}
+.row-text{font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.done-badge{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--green-light);color:var(--green);font-weight:600;flex-shrink:0}
+.progress-wrap{margin-top:.75rem}
+.progress-bar{height:4px;background:var(--paper-3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);transition:width .4s}
+.progress-label{font-size:12px;color:var(--ink-3);margin-top:4px}
+
+/* Context strip — shown above phrase */
+.context-box{background:var(--purple-light);border-radius:var(--radius);padding:8px 14px;margin-bottom:.75rem;font-size:13px;color:var(--purple);line-height:1.5}
+.context-box-label{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;opacity:.7;margin-bottom:2px}
+
+/* Editable NP field */
+.np-edit-wrap{display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem}
+.np-edit-input{font-family:'Libre Baskerville',serif;font-size:16px;border:1.5px solid var(--paper-3);border-radius:var(--radius);padding:8px 14px;flex:1;background:var(--paper-2)}
+.np-edit-input:focus{border-color:var(--accent-mid);background:white;box-shadow:0 0 0 3px var(--accent-light)}
+.np-reload-btn{flex-shrink:0}
+
+/* Phrase stage */
+.phrase-stage{background:var(--paper-2);border-radius:var(--radius);padding:.75rem;min-height:52px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;overflow:hidden}
+.empty-stage{color:var(--ink-4);font-size:14px;font-style:italic;align-self:center}
+.word-chip{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;user-select:none;position:relative}
+.word-chip .token{padding:6px 11px;border-radius:var(--radius);border:1.5px solid var(--paper-3);background:white;font-size:14px;font-family:'Libre Baskerville',serif;color:var(--ink);transition:all .12s;box-shadow:var(--shadow-sm);white-space:nowrap}
+.word-chip .token:hover{border-color:var(--accent-mid);background:var(--accent-light)}
+.word-chip.selected .token{border-color:var(--amber);background:var(--amber-light);color:var(--amber)}
+.word-chip.tagged   .token{border-color:var(--green-mid);background:var(--green-light);color:var(--green)}
+.word-chip.untagged-warn .token{border-color:var(--red);background:var(--red-light);animation:pw .8s ease infinite alternate}
+@keyframes pw{from{opacity:1}to{opacity:.45}}
+.word-chip .tag-lbl{font-size:9px;font-weight:600;color:var(--green);letter-spacing:.04em;text-align:center;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.word-chip .lex-code{font-family:'Source Code Pro',monospace;font-size:8px;color:var(--teal);letter-spacing:.03em}
+.word-chip .ord-num{font-size:9px;color:var(--ink-4);font-family:'Libre Baskerville',serif}
+.word-chip .sense-dot{width:5px;height:5px;border-radius:50%;background:var(--amber);position:absolute;top:1px;right:1px;display:none}
+.word-chip.has-sense .sense-dot{display:block}
+
+/* Auto-tag banner */
+#autotag-banner{display:none;padding:8px 14px;background:var(--amber-light);border:1px solid var(--amber-mid);border-radius:var(--radius);gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:.5rem;font-size:13px}
+#autotag-banner.visible{display:flex}
+.banner-tag{font-family:'Source Code Pro',monospace;font-size:12px;background:white;padding:1px 7px;border-radius:4px;border:1px solid var(--amber-mid);color:var(--amber)}
+
+/* ── TWO-STEP TAG PICKER ── */
+.tag-picker{background:var(--paper-2);border-radius:var(--radius);padding:.75rem;min-height:120px}
+.tag-picker-hint{font-size:12px;color:var(--ink-4);font-style:italic;margin-bottom:.5rem}
+.tag-step{display:none}
+.tag-step.active{display:block}
+.tag-step-label{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-4);margin-bottom:.4rem}
+.tag-btn-grid{display:flex;flex-wrap:wrap;gap:5px}
+.tag-main-btn{padding:5px 12px;border-radius:var(--radius);font-size:13px;font-weight:600;border:1.5px solid var(--paper-3);background:white;color:var(--ink-2);cursor:pointer;transition:all .12s}
+.tag-main-btn:hover{border-color:var(--accent-mid);background:var(--accent-light);color:var(--accent)}
+.tag-main-btn.active{border-color:var(--accent);background:var(--accent);color:white}
+.tag-sub-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--paper-3);background:white;color:var(--ink-2);cursor:pointer;transition:all .12s;white-space:nowrap}
+.tag-sub-btn:hover{border-color:var(--accent-mid);background:var(--accent-light);color:var(--accent)}
+.tag-sub-btn.suggested{border-color:var(--amber);background:var(--amber-light);color:var(--amber);font-weight:700}
+.tag-back-btn{font-size:11px;color:var(--ink-3);cursor:pointer;background:none;border:none;padding:0;margin-bottom:.4rem;display:flex;align-items:center;gap:3px}
+.tag-back-btn:hover{color:var(--ink)}
+.tag-edit-link{font-size:11px;color:var(--accent);cursor:pointer;text-decoration:none}
+.tag-edit-link:hover{text-decoration:underline}
+
+/* Grammatical gloss chip palette */
+.gram-palette{display:flex;flex-direction:column;gap:4px;margin-bottom:.5rem;padding:.6rem;background:white;border:var(--border);border-radius:var(--radius)}
+.gram-group{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.gram-group-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4);min-width:56px;flex-shrink:0}
+.gram-chip{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;font-family:'Source Code Pro',monospace;border:1.5px solid var(--teal-mid);background:var(--teal-light);color:var(--teal);cursor:pointer;transition:all .12s;white-space:nowrap}
+.gram-chip:hover{background:var(--teal);color:white;border-color:var(--teal)}
+.gram-hint{font-size:10px;color:var(--ink-4);font-style:italic;margin-bottom:.4rem}
+
+/* ── GLOSS PANEL ── */
+.gloss-panel{background:var(--teal-light);border-radius:var(--radius);padding:.75rem}
+.gloss-panel-label{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--teal);opacity:.8;margin-bottom:.4rem}
+.gloss-tokens{display:flex;flex-direction:column;gap:.35rem}
+.gloss-row-item{display:flex;align-items:center;gap:.5rem}
+.gloss-word{font-family:'Libre Baskerville',serif;font-size:13px;color:var(--teal);min-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gloss-input{padding:4px 8px;border:1px solid var(--teal-mid);border-radius:4px;font-size:13px;background:white;flex:1;outline:none;min-width:0}
+.gloss-input:focus{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-light)}
+.gloss-input.missing{border-color:var(--red);background:var(--red-light)}
+.gloss-suggest{font-size:10px;color:var(--teal);opacity:.7;font-style:italic;white-space:nowrap}
+/* Phrase translation */
+.phrase-trans-row{display:flex;align-items:center;gap:.5rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid rgba(90,180,180,.2)}
+.phrase-trans-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);opacity:.8;white-space:nowrap}
+.phrase-trans-input{padding:4px 8px;border:1px solid var(--teal-mid);border-radius:4px;font-size:13px;font-family:'Libre Baskerville',serif;font-style:italic;background:white;flex:1;outline:none}
+.phrase-trans-input:focus{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-light)}
+.phrase-trans-input.missing{border-color:var(--red);background:var(--red-light)}
+
+/* ── ANNOTATION LIST (right column) ── */
+.anno-list{display:flex;flex-direction:column;gap:4px}
+.anno-item{display:flex;align-items:center;gap:7px;padding:7px 10px;border:var(--border);border-radius:var(--radius);background:white}
+.anno-order{font-size:11px;color:var(--ink-4);font-family:'Libre Baskerville',serif;min-width:14px;text-align:center}
+.anno-tokens{flex:1;font-family:'Libre Baskerville',serif;font-size:13px;color:var(--ink)}
+.anno-tag-pill{padding:2px 9px;border-radius:20px;background:var(--accent-light);color:var(--accent);font-size:10px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+.anno-del{width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;color:var(--ink-4);font-size:14px;line-height:1;transition:all .12s;flex-shrink:0}
+.anno-del:hover{background:var(--red-light);color:var(--red)}
+
+/* Tag order strip */
+.tag-order-strip{display:flex;padding:5px 10px;background:var(--green-light);border-radius:var(--radius);font-size:11px;color:var(--green);font-weight:500;flex-wrap:wrap;gap:4px;align-items:center}
+.ord-arrow{color:var(--green-mid);font-size:10px}
+
+/* Validation banner */
+.val-banner{display:none;padding:9px 14px;border-radius:var(--radius);flex-direction:column;gap:3px;margin-bottom:.5rem}
+.val-banner.visible{display:flex}
+.val-banner.error{background:var(--red-light);border:1px solid #e8c4c9}
+.val-title{font-size:13px;font-weight:600;color:var(--red)}
+.val-item{font-size:12px;color:var(--red);padding-left:.75rem}
+
+/* Saved entries */
+.saved-entry{border:var(--border);border-radius:var(--radius-lg);background:white;overflow:hidden;margin-bottom:.75rem}
+.saved-entry-head{padding:9px 14px;display:flex;align-items:center;gap:8px;background:var(--paper-2);border-bottom:var(--border);flex-wrap:wrap}
+.saved-phrase{flex:1;font-family:'Libre Baskerville',serif;font-size:14px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta-chip{font-size:11px;padding:2px 8px;border-radius:20px;background:white;border:var(--border);color:var(--ink-3);white-space:nowrap}
+.ph-id-chip{font-family:'Source Code Pro',monospace;font-size:11px;padding:2px 8px;border-radius:4px;background:var(--teal-light);color:var(--teal);white-space:nowrap}
+.saved-ctx{padding:4px 14px;background:var(--purple-light);font-size:12px;color:var(--purple);border-bottom:var(--border)}
+.saved-trans{padding:4px 14px;background:var(--teal-light);font-size:13px;color:var(--teal);border-bottom:var(--border);font-style:italic;font-family:'Libre Baskerville',serif}
+.saved-body{padding:7px 14px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.saved-tag-pill{font-size:11px;padding:2px 9px;border-radius:20px;background:var(--green-light);color:var(--green);font-weight:500}
+.ord-seq{font-size:11px;padding:2px 9px;border-radius:20px;background:var(--paper-2);border:var(--border);color:var(--ink-3)}
+
+/* ══ LEXICON ══ */
+.lex-toolbar{display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.lex-stats{font-size:13px;color:var(--ink-3)}
+.lex-warn{font-size:12px;color:var(--amber);background:var(--amber-light);padding:3px 10px;border-radius:20px;display:none}
+.lex-warn.visible{display:inline-flex;align-items:center;gap:4px}
+.lex-table-wrap{overflow-x:auto;border:var(--border);border-radius:var(--radius)}
+.lex-table{width:100%;border-collapse:collapse;font-size:13px}
+.lex-table thead th{padding:8px 12px;background:var(--paper-2);border-bottom:var(--border);text-align:left;font-weight:600;color:var(--ink-2);white-space:nowrap;position:sticky;top:0}
+.lex-table tbody tr{border-bottom:var(--border)}
+.lex-table tbody tr:last-child{border-bottom:none}
+.lex-table tbody tr:hover{background:var(--paper-2)}
+.lex-table td{padding:7px 12px;color:var(--ink);vertical-align:middle}
+.lex-base-row td{background:var(--paper-2);font-weight:600}
+.lex-sense-row td{padding-left:24px;font-size:13px}
+.lex-code{font-family:'Source Code Pro',monospace;font-size:12px;color:var(--teal);background:var(--teal-light);padding:2px 7px;border-radius:4px}
+.lex-sense-code{font-family:'Source Code Pro',monospace;font-size:11px;color:var(--purple);background:var(--purple-light);padding:2px 7px;border-radius:4px}
+.lex-form{font-family:'Libre Baskerville',serif;font-size:14px}
+.lex-edit-input{padding:4px 8px;border:var(--border);border-radius:4px;font-family:'Source Sans 3',sans-serif;font-size:13px;width:100%;min-width:80px;background:white;color:var(--ink);outline:none}
+.lex-edit-input:focus{border-color:var(--accent-mid)}
+.lex-edit-input.empty-warn{border-color:var(--amber)!important;background:var(--amber-light)}
+.ph-pill{font-size:10px;font-family:'Source Code Pro',monospace;padding:1px 5px;border-radius:3px;background:var(--teal-light);color:var(--teal);margin-right:3px}
+
+/* Category manager */
+.cat-manage-item{border:var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:.5rem}
+.cat-manage-head{padding:10px 14px;background:var(--paper-2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cat-manage-label{flex:1;font-size:14px;font-weight:600;color:var(--ink)}
+.cat-manage-id{font-size:11px;color:var(--ink-4);font-family:monospace;background:var(--paper-3);padding:1px 6px;border-radius:3px}
+.cat-manage-subs{padding:8px 14px;display:flex;flex-direction:column;gap:4px;border-top:var(--border)}
+.sub-manage-item{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:var(--radius);background:var(--paper-2);font-size:13px}
+.sub-manage-item>span:first-child{flex:1}
+.sub-id{font-size:11px;color:var(--ink-4);font-family:monospace;background:var(--paper-3);padding:1px 5px;border-radius:3px}
+.icon-btn{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;color:var(--ink-4);font-size:15px;line-height:1;transition:all .12s;flex-shrink:0;border:none;background:none}
+.icon-btn:hover{background:var(--red-light);color:var(--red)}
+.empty-note{padding:1rem 0;text-align:center;font-size:14px;color:var(--ink-4);font-style:italic}
+
+/* Sense modal */
+#sense-modal{display:none;position:fixed;inset:0;background:rgba(26,26,24,.45);z-index:1000;align-items:center;justify-content:center}
+#sense-modal.visible{display:flex}
+.modal-box{background:white;border-radius:var(--radius-lg);box-shadow:0 8px 32px rgba(0,0,0,.18);max-width:460px;width:92%;overflow:hidden}
+.modal-header{padding:.9rem 1.5rem;border-bottom:var(--border);background:var(--paper-2);display:flex;align-items:center}
+.modal-title{font-family:'Libre Baskerville',serif;font-size:14px;color:var(--ink);font-weight:400;flex:1}
+.modal-body{padding:1rem 1.5rem;display:flex;flex-direction:column;gap:.6rem;max-height:360px;overflow-y:auto}
+.modal-footer{padding:.75rem 1.5rem;border-top:var(--border);display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap}
+.sense-option{display:flex;align-items:center;gap:10px;padding:9px 12px;border:var(--border);border-radius:var(--radius);cursor:pointer;transition:all .12s}
+.sense-option:hover{background:var(--accent-light);border-color:var(--accent-mid)}
+.sense-option.selected{background:var(--accent-light);border-color:var(--accent)}
+.sense-option-code{font-family:'Source Code Pro',monospace;font-size:11px;color:var(--purple);background:var(--purple-light);padding:2px 6px;border-radius:3px;flex-shrink:0}
+.sense-option-body{flex:1;font-size:13px;color:var(--ink)}
+.new-sense-form{display:flex;flex-direction:column;gap:.5rem;padding:9px 12px;border:1px dashed var(--paper-3);border-radius:var(--radius)}
+.new-sense-label{font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase}
+
+/* ── Auto-save status bar ── */
+#autosave-bar{
+  background:var(--paper-2);
+  border-bottom:var(--border);
+  padding:4px 2rem;
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  font-size:12px;
+  color:var(--ink-3);
+  flex-wrap:wrap;
+}
+.as-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;transition:background .3s}
+.as-dot.saving{background:var(--amber)}
+#as-time{flex:1}
+.as-restore-banner{
+  display:none;
+  background:var(--accent-light);
+  border-bottom:1px solid var(--accent-mid);
+  padding:8px 2rem;
+  font-size:13px;
+  color:var(--accent);
+  align-items:center;
+  gap:1rem;
+  flex-wrap:wrap;
+}
+.as-restore-banner.visible{display:flex}
+  .annotate-layout{grid-template-columns:minmax(150px,190px) minmax(160px,200px) minmax(0,1fr) minmax(0,1fr)}
+}
+@media(max-width:1000px){
+  header{padding:0 1rem}
+  main{padding:1rem}
+  .annotate-layout{grid-template-columns:minmax(140px,170px) 1.5fr 1fr;row-gap:1rem}
+  .annotate-layout>:first-child{grid-column:1}
+  .annotate-layout>:nth-child(2){grid-column:2/4}
+  .annotate-layout>:nth-child(3){grid-column:1/3}
+  .annotate-layout>:last-child{grid-column:3/4}
+  .col-map-grid{grid-template-columns:1fr 1fr}
+  #setup-screen{max-width:100%}
+}
+@media(max-width:700px){
+  .annotate-layout{grid-template-columns:1fr;row-gap:.75rem}
+  .annotate-layout>*{grid-column:1!important}
+  .col-map-grid{grid-template-columns:1fr}
+  header{padding:0 .75rem}
+  main{padding:.75rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-dot"></span> NP Annotator</div>
+  <div class="session-strip" id="session-strip">
+    <div class="session-chip"><span class="lbl">lang&nbsp;</span><span class="val" id="sh-lang"></span></div>
+    <div class="session-chip"><span class="lbl">code&nbsp;</span><span class="val" id="sh-code"></span></div>
+    <div class="session-chip"><span class="lbl">col&nbsp;</span><span class="val" id="sh-col"></span></div>
+    <button class="btn btn-sm btn-ghost" onclick="resetSession()">↺ New session</button>
+  </div>
+  <nav>
+    <button class="nb active" id="nav-annotate"  onclick="switchTab('annotate')"  disabled>Annotate</button>
+    <button class="nb"        id="nav-data"       onclick="switchTab('data')"       disabled>Data</button>
+    <button class="nb"        id="nav-lexicon"    onclick="switchTab('lexicon')"    disabled>Lexicon</button>
+    <button class="nb"        id="nav-categories" onclick="switchTab('categories')" disabled>Categories</button>
+  </nav>
+</header>
+
+<!-- Auto-save status bar -->
+<div id="autosave-bar" style="display:none">
+  <span class="as-dot" id="as-dot"></span>
+  <span id="as-time">Auto-save active</span>
+  <span style="color:var(--ink-4)">·</span>
+  <span id="as-count" style="color:var(--ink-3)"></span>
+  <button class="btn btn-sm btn-danger" style="margin-left:auto;padding:3px 12px;font-size:11px" onclick="clearStorage()">
+    🗑 Clear saved data
+  </button>
+</div>
+
+<!-- Restore banner (shown on page load when saved state found) -->
+<div class="as-restore-banner" id="restore-banner">
+  <span>💾 <strong>Saved session found</strong> — you can continue where you left off.</span>
+  <button class="btn btn-sm btn-primary" onclick="restoreFromStorage()">Resume session</button>
+  <button class="btn btn-sm btn-ghost" onclick="dismissRestoreBanner()">Start fresh</button>
+</div>
+<div id="sense-modal">
+  <div class="modal-box">
+    <div class="modal-header"><span class="modal-title">Sense for "<span id="modal-word"></span>"</span></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmSense()">Use this sense</button>
+    </div>
+  </div>
+</div>
+
+<main>
+
+<!-- ══ SETUP ══ -->
+<div id="setup-screen">
+  <div style="margin-bottom:1.75rem">
+    <h2 style="font-family:'Libre Baskerville',serif;font-size:22px;font-weight:400;margin-bottom:.3rem">New annotation session</h2>
+    <p style="font-size:14px;color:var(--ink-3)">Upload your file, map columns, and configure session defaults.</p>
+  </div>
+
+  <!-- Step 1: Upload or resume -->
+  <div class="step-card" id="sc-1">
+    <div class="step-header"><div class="step-num" id="sn-1">1</div><span class="step-title">Upload data file</span><span class="step-subtitle">CSV or Excel · UTF-8</span></div>
+    <div class="step-body" style="display:flex;flex-direction:column;gap:1rem">
+      <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4M12 4v12"/></svg>
+        <p><strong>Click to upload</strong> — .csv · .xlsx · .xls</p>
+      </div>
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFile(event)">
+      <div id="file-note" style="display:none;padding:9px 14px;border-radius:var(--radius);background:var(--green-light);color:var(--green);font-size:13px;font-weight:500"></div>
+      <div id="header-toggle-wrap" style="display:none;margin-top:.4rem;display:none;align-items:center;gap:.5rem;font-size:13px;color:var(--ink-3)">
+        <input type="checkbox" id="has-header-cb" onchange="toggleHeaderRow()" style="width:auto;cursor:pointer">
+        <span>First row treated as header</span>
+      </div>
+
+      <div>
+        <div class="section-label">Import saved lexicon (optional)</div>
+        <div class="upload-zone" style="padding:.9rem" onclick="document.getElementById('lexInput').click()">
+          <p style="font-size:13px"><strong>Import lexicon JSON</strong> — restore token codes from a previous session</p>
+        </div>
+        <input type="file" id="lexInput" accept=".json" style="display:none" onchange="importLexicon(event)">
+        <div id="lex-import-note" style="display:none;font-size:12px;color:var(--green);margin-top:.4rem"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Column mapping -->
+  <div class="step-card locked" id="sc-2">
+    <div class="step-header"><div class="step-num" id="sn-2">2</div><span class="step-title">Map columns &amp; set language</span><span class="step-subtitle">Context required · others optional</span></div>
+    <div class="step-body">
+      <div class="col-map-grid">
+        <!-- Context: REQUIRED -->
+        <div>
+          <div class="map-badge" style="color:var(--purple)"><span class="badge-dot" style="background:var(--purple)"></span> Context column <span class="required-star">*</span></div>
+          <select id="sel-context" onchange="onColMapChange()"><option value="">— select —</option></select>
+          <div class="field-hint">Full source sentence. Required.</div>
+        </div>
+        <!-- Data: OPTIONAL -->
+        <div>
+          <div class="map-badge" style="color:var(--accent)"><span class="badge-dot" style="background:var(--accent)"></span> Data column <span style="font-size:11px;color:var(--ink-4);font-weight:400">optional</span></div>
+          <select id="sel-data" onchange="onColMapChange()"><option value="">— none / edit manually —</option></select>
+          <div class="field-hint">Pre-filled noun phrase. Editable on annotation screen.</div>
+        </div>
+        <!-- Source Name: OPTIONAL -->
+        <div>
+          <div class="map-badge" style="color:var(--teal)"><span class="badge-dot" style="background:var(--teal)"></span> Source name <span style="font-size:11px;color:var(--ink-4);font-weight:400">optional</span></div>
+          <select id="sel-source" onchange="onColMapChange()"><option value="">— none —</option></select>
+          <div class="field-hint">Name of the source text or document.</div>
+        </div>
+        <!-- Data Code: from column, OPTIONAL -->
+        <div>
+          <div class="map-badge" style="color:var(--amber)"><span class="badge-dot" style="background:var(--amber)"></span> Data code column <span style="font-size:11px;color:var(--ink-4);font-weight:400">optional</span></div>
+          <select id="sel-code" onchange="onColMapChange()"><option value="">— none —</option></select>
+          <div class="field-hint">Per-row corpus or data identifier from file.</div>
+        </div>
+        <!-- Language: required dropdown -->
+        <div>
+          <div class="map-badge" style="color:var(--green)"><span class="badge-dot" style="background:var(--green)"></span> Language <span class="required-star">*</span></div>
+          <select id="langSelect" onchange="onLangChange()">
+            <option value="">— select —</option>
+            <option>Turkish</option><option>English</option><option>German</option><option>French</option>
+            <option>Arabic</option><option>Persian</option><option>Japanese</option><option>Chinese</option>
+            <option>Spanish</option><option>Italian</option><option>Russian</option><option>Dutch</option>
+            <option>Polish</option><option>Portuguese</option><option>Korean</option><option>Hebrew</option>
+            <option>Greek</option><option>Hungarian</option><option value="__other__">Other…</option>
+          </select>
+          <input type="text" id="langCustom" placeholder="Type language name" style="display:none;margin-top:6px" oninput="validateSetup()">
+          <div class="field-hint">Language of this dataset.</div>
+        </div>
+        <!-- Dataset code: manual text, REQUIRED -->
+        <div>
+          <div class="map-badge" style="color:var(--red)"><span class="badge-dot" style="background:var(--red)"></span> Dataset code <span class="required-star">*</span></div>
+          <input type="text" id="codeInput" placeholder="e.g. TR-01, EN-WIKI-A" oninput="validateSetup()" style="margin-top:0">
+          <div class="field-hint">Short identifier for this annotation session.</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem"><div class="section-label">Preview</div><div class="col-table-wrap" id="col-table-wrap"></div><div class="col-legend" id="col-legend"></div></div>
+    </div>
+  </div>
+
+  <div class="setup-actions">
+    <span class="setup-msg" id="setup-msg"></span>
+    <button class="btn btn-primary" id="start-btn" onclick="startSession()" disabled>Start annotating →</button>
+  </div>
+</div>
+
+<!-- ══ ANNOTATE TAB ══ -->
+<div class="tab-panel" id="tab-annotate" style="display:none">
+
+  <!-- 4-column flat grid: Rows | Noun Phrase | Tag Selection | Gloss -->
+  <div class="annotate-layout">
+
+    <!-- Col 1: Row list -->
+    <div class="card" style="align-self:start;min-width:0">
+      <div class="card-header" style="padding:.75rem 1rem">
+        <span class="card-title">Rows</span>
+        <span id="file-status" style="font-size:11px;color:var(--ink-3)"></span>
+      </div>
+      <div class="card-body" style="padding:.75rem .75rem">
+        <div class="row-list" id="row-list"></div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+          <div class="progress-label" id="prog-label"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Col 2: Noun phrase (context + editable NP) -->
+    <div class="card" style="align-self:start;min-width:0">
+      <div class="card-header" style="padding:.75rem 1rem">
+        <span class="card-title">Noun phrase</span>
+        <div class="action-row">
+          <button class="btn btn-sm btn-ghost" style="padding:3px 8px" onclick="clearSelection()">Clear</button>
+          <button class="btn btn-sm btn-danger" style="padding:3px 8px" onclick="clearAll()">Reset</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.6rem">
+        <!-- Context first -->
+        <div id="context-box" style="display:none" class="context-box" style="margin-bottom:0">
+          <div class="context-box-label">Context</div>
+          <div id="context-text"></div>
+        </div>
+        <!-- Editable NP -->
+        <div id="np-edit-area" style="display:none">
+          <div class="section-label" style="margin-bottom:.3rem">Noun phrase <span style="font-weight:400;color:var(--ink-3);text-transform:none;letter-spacing:0;font-size:11px">— edit if needed</span></div>
+          <div class="np-edit-wrap" style="margin-bottom:0">
+            <input type="text" class="np-edit-input" id="np-edit-input" placeholder="Type or edit…">
+            <button class="btn btn-sm btn-primary np-reload-btn" onclick="reloadTokens()">↺</button>
+          </div>
+        </div>
+        <!-- Validation banner -->
+        <div class="val-banner" id="val-banner">
+          <div class="val-title">⚠ Cannot save:</div>
+          <div id="val-items"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Col 3: Tag selection (tokens + ordering + tag picker) -->
+    <div class="card" style="min-width:0">
+      <div class="card-header" style="padding:.75rem 1rem">
+        <span class="card-title">Tag selection</span>
+        <span class="tag-edit-link" onclick="switchTab('categories')">✎ Edit</span>
+      </div>
+      <div class="card-body" style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.75rem">
+        <!-- Tokens -->
+        <div>
+          <div class="section-label">Tokens — click to select</div>
+          <div class="phrase-stage" id="phrase-stage" style="min-height:52px;padding:.6rem;margin-bottom:0"><span class="empty-stage">Select a row.</span></div>
+        </div>
+        <!-- Auto-tag banner -->
+        <div id="autotag-banner" style="margin:0">
+          <span style="color:var(--amber);font-size:13px">Suggestion: </span>
+          <span id="banner-text"></span>
+          <button class="btn btn-sm btn-amber" onclick="confirmAutoTag()">Confirm</button>
+          <button class="btn btn-sm" onclick="dismissBanner()">Change</button>
+        </div>
+        <!-- Ordering -->
+        <div id="ordering-section" style="display:none">
+          <div class="section-label">Ordering</div>
+          <div class="tag-order-strip" id="tag-order-strip" style="margin:0"></div>
+        </div>
+        <!-- Tag picker -->
+        <div class="tag-picker" id="tag-picker">
+          <div class="tag-picker-hint">Select token(s) above to tag.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Col 4: Gloss -->
+    <div class="card" style="min-width:0">
+      <div class="card-header" style="padding:.75rem 1rem">
+        <span class="card-title">Gloss</span>
+      </div>
+      <div class="card-body" style="padding:.75rem 1rem">
+        <div class="gloss-panel" id="gloss-panel">
+          <div style="color:var(--ink-4);font-size:13px;font-style:italic">Load a phrase to add glosses.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Save button — standalone, full width below all cards -->
+  <div style="display:flex;justify-content:flex-end;gap:.75rem;align-items:center;padding:.25rem 0">
+    <button class="btn btn-primary" onclick="commitPhrase()" style="padding:10px 28px;font-size:14px">Save phrase →</button>
+  </div>
+
+</div>
+
+<!-- ══ DATA TAB ══ -->
+<div class="tab-panel" id="tab-data" style="display:none">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Saved annotations</span>
+      <div class="action-row">
+        <button class="btn btn-sm btn-teal" onclick="exportXLSX()">Export XLSX</button>
+        <button class="btn btn-sm" onclick="exportJSON()">Export JSON</button>
+        <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
+        <button class="btn btn-sm btn-danger" onclick="clearSaved()">Clear all</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="saved-count" style="font-size:13px;color:var(--ink-3);margin-bottom:.75rem"></div>
+      <div id="saved-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LEXICON TAB ══ -->
+<div class="tab-panel" id="tab-lexicon" style="display:none">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Lexicon</span>
+      <div class="action-row">
+        <button class="btn btn-sm btn-teal" onclick="exportLexiconXLSX()">Export XLSX</button>
+        <button class="btn btn-sm" onclick="exportLexiconCSV()">Export CSV</button>
+        <button class="btn btn-sm" onclick="exportLexiconJSON()">Export JSON</button>
+        <button class="btn btn-sm btn-danger" onclick="clearLexicon()">Clear</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="lex-toolbar">
+        <input type="search" style="flex:1;min-width:160px" id="lex-search" placeholder="Search word forms, codes, glosses…" oninput="renderLexicon()">
+        <span class="lex-warn" id="lex-warn">⚠ Some entries have empty glosses</span>
+        <span class="lex-stats" id="lex-stats"></span>
+      </div>
+      <div class="lex-table-wrap">
+        <table class="lex-table">
+          <thead><tr><th>Code</th><th>Word form</th><th>Language</th><th>Gloss (EN)</th><th>Phrases</th><th></th></tr></thead>
+          <tbody id="lex-tbody"></tbody>
+        </table>
+      </div>
+      <p style="font-size:12px;color:var(--ink-3);margin-top:.75rem;font-style:italic">Each word may have multiple senses (S1, S2…). Export blocked if any gloss is empty.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CATEGORIES TAB ══ -->
+<div class="tab-panel" id="tab-categories" style="display:none">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Category manager</span><span style="font-size:13px;color:var(--ink-3)">Changes apply immediately</span></div>
+    <div class="card-body">
+      <div id="cat-manager"></div>
+      <div style="display:flex;gap:.75rem;margin-top:.75rem;padding-top:.75rem;border-top:var(--border)">
+        <input type="text" id="newCatName" placeholder="New main category name" style="flex:1">
+        <button class="btn btn-primary" onclick="addMainCat()">Add category</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+/* ══ DEFAULT CATEGORIES — 3-level: category → subcategory → type ══ */
+const DEFAULT_CATS=[
+  {id:'NOUN',label:'Noun',subs:[
+    {id:'NOUN-ANIM',label:'Animate',types:[]},
+    {id:'NOUN-INANIM',label:'Inanimate',types:[
+      {id:'NOUN-INANIM-OBJ',label:'Object'},
+      {id:'NOUN-INANIM-EVT',label:'Event'}
+    ]}
+  ]},
+  {id:'ADJ',label:'Adjective',subs:[
+    {id:'ADJ-INT',label:'Intersective',types:[
+      {id:'ADJ-INT-SHAPE',label:'Shape'},
+      {id:'ADJ-INT-COLOR',label:'Color'},
+      {id:'ADJ-INT-MAT',label:'Material'}
+    ]},
+    {id:'ADJ-NINT',label:'Non-intersective',types:[
+      {id:'ADJ-NINT-SIZE',label:'Size'},
+      {id:'ADJ-NINT-AGE',label:'Age'},
+      {id:'ADJ-NINT-QUAL',label:'Qualifier'}
+    ]}
+  ]},
+  {id:'ART',label:'Article',subs:[
+    {id:'ART-DEF',label:'Definite',types:[]},
+    {id:'ART-INDEF',label:'Indefinite',types:[]}
+  ]},
+  {id:'POSS',label:'Possessive',subs:[
+    {id:'POSS-GEN',label:'Genitive',types:[]},
+    {id:'POSS-PP-GEN',label:'PP-Genitive',types:[]}
+  ]},
+  {id:'NUM',label:'Numeral',subs:[
+    {id:'NUM-ORD',label:'Ordinal',types:[]},
+    {id:'NUM-CARD',label:'Cardinal',types:[]}
+  ]},
+  {id:'DEM',label:'Demonstrative',subs:[
+    {id:'DEM-PROX',label:'Proximal',types:[]},
+    {id:'DEM-DIST',label:'Distal',types:[]}
+  ]},
+  {id:'QUANT',label:'Quantifier',subs:[
+    {id:'QUANT-EXIST',label:'Existential',types:[]},
+    {id:'QUANT-UNIV',label:'Universal',types:[]}
+  ]},
+  {id:'RC',label:'Relative Clause',subs:[
+    {id:'RC-REST',label:'Restrictive',types:[]},
+    {id:'RC-NREST',label:'Non-restrictive',types:[]}
+  ]},
+  {id:'PP',label:'Prepositional Phrase',subs:[]}
+];
+
+/* ══ STATE ══ */
+let categories=JSON.parse(JSON.stringify(DEFAULT_CATS));
+let tokens=[],selectedIdx=new Set(),currentAnnotations=[],currentGlosses={},currentPhraseTranslation='';
+let savedAnnotations=[];
+let fileRows=[],fileHeaders=[],activeRowIdx=-1;
+let colMap={data:-1,lang:-1,code:-1,context:-1,source:-1};
+let session={language:'',code:''};
+let phraseCounter=0;
+let lexicon={},lexCounter=0;
+let pendingAutoTag=null;
+/* tagSuggestions: map of joined-token-string -> tagId, built from savedAnnotations */
+let tagSuggestions={};
+let rawContext=''; // stores the original context text, never overwritten by NP edits
+
+/* ══════════════════════════════════════
+   AUTO-SAVE  (localStorage, no external API)
+══════════════════════════════════════ */
+const LS_KEY='np_annotator_v1';
+
+function autoSave(){
+  if(!fileRows.length) return; // nothing to save before a session is open
+  try{
+    const snap={
+      ts: Date.now(),
+      session, fileHeaders, fileRows, colMap, categories,
+      phraseCounter, lexicon: Object.values(lexicon), lexCounter,
+      savedAnnotations, tagSuggestions
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(snap));
+    updateAutoSaveBar();
+  }catch(e){
+    // localStorage can throw if storage quota exceeded
+    console.warn('Auto-save failed:', e.message);
+  }
+}
+
+function updateAutoSaveBar(){
+  const bar=document.getElementById('autosave-bar');
+  if(!bar) return;
+  bar.style.display='flex';
+  const dot=document.getElementById('as-dot');
+  dot.classList.add('saving');
+  setTimeout(()=>dot.classList.remove('saving'),600);
+  const d=new Date();
+  document.getElementById('as-time').textContent=
+    'Last saved: '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('as-count').textContent=
+    savedAnnotations.length+' phrase'+(savedAnnotations.length!==1?'s':'')+' · '+
+    Object.keys(lexicon).length+' lexicon entries';
+}
+
+function checkStorageOnLoad(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const snap=JSON.parse(raw);
+    if(!snap||!snap.fileRows||!snap.fileRows.length) return;
+    // Show restore banner
+    const banner=document.getElementById('restore-banner');
+    if(banner){
+      const d=new Date(snap.ts);
+      banner.querySelector('strong').textContent=
+        'Saved session found — '+d.toLocaleDateString()+' '+
+        d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+
+        ' · '+( snap.savedAnnotations||[]).length+' phrases annotated';
+      banner.classList.add('visible');
+    }
+  }catch(e){ console.warn('Storage check failed:', e); }
+}
+
+function restoreFromStorage(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const snap=JSON.parse(raw);
+
+    // Restore all state
+    session        = snap.session        || {language:'',code:''};
+    fileHeaders    = snap.fileHeaders    || [];
+    fileRows       = snap.fileRows       || [];
+    colMap         = snap.colMap         || {data:-1,lang:-1,code:-1,context:-1};
+    categories     = snap.categories     || JSON.parse(JSON.stringify(DEFAULT_CATS));
+    phraseCounter  = snap.phraseCounter  || 0;
+    lexCounter     = snap.lexCounter     || 0;
+    savedAnnotations = snap.savedAnnotations || [];
+    tagSuggestions   = snap.tagSuggestions   || {};
+
+    // Restore lexicon
+    lexicon={};
+    (snap.lexicon||[]).forEach(e=>{
+      if(e.lexId&&e.wordForm){
+        const k=bk(e.wordForm,e.language||'');
+        lexicon[k]={...e,senses:(e.senses||[]).map(s=>({...s,phraseIds:s.phraseIds||[]}))};
+      }
+    });
+
+    // Hide restore banner, boot into annotate view
+    dismissRestoreBanner();
+    _activateSession();
+    document.getElementById('autosave-bar').style.display='flex';
+    updateAutoSaveBar();
+  }catch(e){
+    alert('Could not restore session: '+e.message);
+  }
+}
+
+function dismissRestoreBanner(){
+  const b=document.getElementById('restore-banner');
+  if(b) b.classList.remove('visible');
+}
+
+/* Shared boot logic used by both startSession and restoreFromStorage */
+function _activateSession(){
+  document.getElementById('sh-lang').textContent = session.language;
+  document.getElementById('sh-code').textContent = session.code;
+  document.getElementById('sh-col').textContent  =
+    (colMap.context>=0 && fileHeaders[colMap.context]) ? fileHeaders[colMap.context] : '—';
+  document.getElementById('session-strip').classList.add('visible');
+  document.getElementById('setup-screen').style.display='none';
+  ['annotate','data','lexicon','categories'].forEach(id=>
+    document.getElementById('nav-'+id).disabled=false
+  );
+  renderRowList();
+  switchTab('annotate');
+}
+
+function clearStorage(){
+  const count=(savedAnnotations||[]).length;
+  const msg=count>0
+    ? `This will permanently delete all ${count} saved phrase${count!==1?'s':''} and the lexicon from this browser.\n\nPlease make sure you have exported your data first.\n\nContinue?`
+    : 'Clear saved data from browser storage and start fresh?';
+  if(!confirm(msg)) return;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  location.reload();
+}
+
+/* ══ LEXICON (gloss-only, no wordClass) ══ */
+function bk(w,l){return(l||'').toLowerCase()+'::'+w.toLowerCase();}
+function getLexBase(w,l){
+  // Try exact language match first, then fall back to any entry for this word form
+  const exact=lexicon[bk(w,l)];
+  if(exact) return exact;
+  // Fallback: find any entry whose wordForm matches (case-insensitive)
+  const wLow=w.toLowerCase();
+  return Object.values(lexicon).find(e=>e.wordForm.toLowerCase()===wLow)||null;
+}
+function ensureLexBase(w,l){
+  const k=bk(w,l);
+  if(!lexicon[k]){lexCounter++;lexicon[k]={lexId:'LEX-'+String(lexCounter).padStart(4,'0'),wordForm:w,language:l||'',senses:[]};}
+  return lexicon[k];
+}
+function ensureSense(base,gloss,phraseId){
+  let s=base.senses.find(x=>x.gloss===gloss);
+  if(!s){const n=base.senses.length+1;s={senseId:base.lexId+'-S'+n,gloss:gloss||'',phraseIds:[]};base.senses.push(s);}
+  if(phraseId&&!s.phraseIds.includes(phraseId))s.phraseIds.push(phraseId);
+  return s;
+}
+
+/* ══ TAG SUGGESTIONS (from Data section) ══ */
+function rebuildTagSuggestions(){
+  tagSuggestions={};
+  savedAnnotations.forEach(s=>{
+    s.annotations.forEach(a=>{
+      // Key: sorted word forms joined, so order-independent
+      const key=a.tokens.toLowerCase();
+      if(!tagSuggestions[key])tagSuggestions[key]=[];
+      if(!tagSuggestions[key].includes(a.tag))tagSuggestions[key].push(a.tag);
+    });
+  });
+}
+
+function getTagSuggestion(indices){
+  if(!indices||!indices.length)return[];
+  const words=indices.map(i=>tokens[i].word).join(' ').toLowerCase();
+  return tagSuggestions[words]||[];
+}
+
+/* ══ TAG HELPERS ══ */
+function splitTag(id){
+  for(const c of categories){
+    if(id===c.id) return{category:c.label,subcategory:'',type:''};
+    for(const s of c.subs||[]){
+      if(id===s.id) return{category:c.label,subcategory:s.label,type:''};
+      for(const t of s.types||[])
+        if(id===t.id) return{category:c.label,subcategory:s.label,type:t.label};
+    }
+  }
+  const p=id.split('-');return{category:p[0],subcategory:p.slice(1,-1).join('-'),type:p[p.length-1]};
+}
+function tagLabel(id){
+  for(const c of categories){
+    if(id===c.id) return c.label;
+    for(const s of c.subs||[]){
+      if(id===s.id) return s.label;
+      for(const t of s.types||[]) if(id===t.id) return t.label;
+    }
+  }
+  return id;
+}
+
+/* ══ SETUP ══ */
+function handleFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const ext=f.name.split('.').pop().toLowerCase();
+  if(ext==='csv'){const r=new FileReader();r.onload=ev=>initFile(parseCSV(ev.target.result),f.name);r.readAsText(f,'UTF-8');}
+  else{const r=new FileReader();r.onload=ev=>{const wb=XLSX.read(ev.target.result,{type:'binary',codepage:65001});const raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''}).map(r=>r.map(c=>String(c==null?'':c)));initFile(raw,f.name);};r.readAsBinaryString(f);}
+}
+function parseCSV(text){
+  return text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').map(line=>{
+    const cells=[];let cur='';let q=false;
+    for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q;}else if(ch===','&&!q){cells.push(cur);cur='';}else cur+=ch;}
+    cells.push(cur);return cells.map(c=>c.trim());
+  });
+}
+function initFile(raw,name){
+  raw=raw.filter(r=>r.some(c=>String(c).trim()));
+  if(!raw.length){alert('File appears empty.');return;}
+  // Detect if first row looks like headers (all non-numeric, no blank)
+  const firstRow=raw[0];
+  const looksLikeHeader=firstRow.every(c=>isNaN(Number(c))&&String(c).trim().length>0);
+  if(looksLikeHeader){
+    fileHeaders=firstRow.map((h,i)=>String(h).trim()||`Column ${i+1}`);
+    fileRows=raw.slice(1);
+  } else {
+    // No header row — generate column names, all rows are data
+    fileHeaders=firstRow.map((_,i)=>`Column ${i+1}`);
+    fileRows=raw;
+  }
+  document.getElementById('file-note').style.display='';
+  document.getElementById('file-note').textContent=`✓  "${name}" — ${fileRows.length} rows · ${fileHeaders.length} columns`;
+  // Show the header toggle so user can override detection
+  const toggle=document.getElementById('header-toggle-wrap');
+  if(toggle){
+    toggle.style.display='';
+    document.getElementById('has-header-cb').checked=looksLikeHeader;
+    document.getElementById('header-toggle-wrap').querySelector('span').textContent=
+      looksLikeHeader?'First row treated as header (auto-detected)':'First row treated as data (no headers detected)';
+  }
+  document.getElementById('sn-1').classList.add('done');
+  populateColSelects();renderColTable();unlockStep('sc-2');validateSetup();
+}
+
+function toggleHeaderRow(){
+  const cb=document.getElementById('has-header-cb');
+  const allRaw=[...(cb.checked?[fileHeaders,...fileRows]:[fileHeaders,...fileRows])];
+  // Re-read raw from last loaded file — reconstruct from current state
+  const raw=[fileHeaders,...fileRows];
+  if(cb.checked){
+    // treat first data row as header
+    fileHeaders=raw[0].map((h,i)=>String(h).trim()||`Column ${i+1}`);
+    fileRows=raw.slice(1);
+  } else {
+    fileHeaders=raw[0].map((_,i)=>`Column ${i+1}`);
+    fileRows=raw;
+  }
+  document.getElementById('has-header-cb').closest('span').nextElementSibling&&null;
+  document.getElementById('header-toggle-wrap').querySelector('span').textContent=
+    cb.checked?'First row treated as header':'First row treated as data';
+  document.getElementById('file-note').textContent=
+    document.getElementById('file-note').textContent.replace(/\d+ rows/,fileRows.length+' rows');
+  populateColSelects();renderColTable();validateSetup();
+}
+function importLexicon(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{try{const data=JSON.parse(ev.target.result);let count=0;const entries=Array.isArray(data)?data:Object.values(data);entries.forEach(entry=>{if(entry.lexId&&entry.wordForm){const k=bk(entry.wordForm,entry.language||'');lexicon[k]={...entry,senses:(entry.senses||[]).map(s=>({...s,phraseIds:s.phraseIds||[]}))};const n=parseInt((entry.lexId||'').replace('LEX-',''));if(!isNaN(n)&&n>lexCounter)lexCounter=n;count++;}});document.getElementById('lex-import-note').style.display='';document.getElementById('lex-import-note').textContent=`✓ ${count} entries imported`;}catch{alert('Invalid lexicon JSON.');}};
+  r.readAsText(f,'UTF-8');
+}
+
+
+function populateColSelects(){
+  ['data','code','context','source'].forEach(role=>{
+    const sel=document.getElementById('sel-'+role);if(!sel)return;
+    sel.innerHTML=role==='context'?'<option value="">— select —</option>':'<option value="">— none —</option>';
+    fileHeaders.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h;sel.appendChild(o);});
+    const g=autoGuess(role);if(g>=0)sel.value=g;
+  });syncColMap();
+}
+function autoGuess(r){
+  const p={
+    data:[/\bnp\b/i,/noun.?phrase/i,/phrase/i,/\bdata\b/i],
+    code:[/\bcode\b/i,/corpus/i,/dataset/i],
+    context:[/context/i,/sentence/i,/\bsent\b/i,/full/i,/example/i,/text/i],
+    source:[/source/i,/\bsrc\b/i,/\bbook\b/i,/\bdoc\b/i,/title/i,/name/i]
+  };
+  for(const pat of(p[r]||[])){const i=fileHeaders.findIndex(h=>pat.test(h));if(i>=0)return i;}
+  return -1;
+}
+function syncColMap(){
+  colMap.data   = parseInt(document.getElementById('sel-data'   )?.value)||  -1;
+  colMap.code   = parseInt(document.getElementById('sel-code'   )?.value)||  -1;
+  colMap.context= parseInt(document.getElementById('sel-context')?.value)||  -1;
+  colMap.source = parseInt(document.getElementById('sel-source' )?.value)||  -1;
+  colMap.lang   = -1;
+}
+function onColMapChange(){syncColMap();renderColTable();if(colMap.context>=0){document.getElementById('sn-2').classList.add('done');}validateSetup();}
+function renderColTable(){
+  const ro={};Object.entries(colMap).forEach(([r,i])=>{if(i>=0)ro[i]=r;});
+  const prev=fileRows.slice(0,5);let h='<table class="col-table"><thead><tr>';
+  fileHeaders.forEach((col,i)=>{const r=ro[i]||'';h+=`<th class="${r?'role-'+r:''}">${col}${r?` <span style="font-size:9px;opacity:.7">[${r}]</span>`:''}</th>`;});
+  h+='</tr></thead><tbody>';
+  prev.forEach(row=>{h+='<tr>';fileHeaders.forEach((_,i)=>{const r=ro[i]||'';h+=`<td class="${r?'role-'+r:''}">${row[i]||''}</td>`;});h+='</tr>';});
+  h+='</tbody></table>';
+  document.getElementById('col-table-wrap').innerHTML=h;
+  const clrs={data:'var(--accent)',code:'var(--amber)',context:'var(--purple)',source:'var(--teal)'};
+  document.getElementById('col-legend').innerHTML=Object.entries(colMap)
+    .filter(([r,i])=>i>=0&&r!=='lang')
+    .map(([r,i])=>`<div class="legend-item"><span class="badge-dot" style="background:${clrs[r]||'var(--ink-4)'};width:8px;height:8px;border-radius:50%;flex-shrink:0"></span><span style="color:${clrs[r]||'var(--ink-2)'};font-weight:600">${r}</span><span style="color:var(--ink-3)"> → ${fileHeaders[i]}</span></div>`).join('');
+}
+function unlockStep(id){document.getElementById(id).classList.remove('locked');}
+function onLangChange(){const v=document.getElementById('langSelect').value;document.getElementById('langCustom').style.display=v==='__other__'?'':'none';validateSetup();}
+function validateSetup(){
+  const hf=fileRows.length>0,hCtx=colMap.context>=0;
+  const lv=document.getElementById('langSelect').value,lc=document.getElementById('langCustom').value.trim();
+  const hl=(lv&&lv!=='__other__')||(lv==='__other__'&&lc.length>0);
+  const hc=colMap.code>=0||document.getElementById('codeInput').value.trim().length>0;
+  const ok=hf&&hCtx&&hl&&hc;
+  document.getElementById('start-btn').disabled=!ok;
+  const m=[];if(!hCtx)m.push('select context column');if(!hl)m.push('select language');if(!hc)m.push('set dataset code');
+  document.getElementById('setup-msg').textContent=ok?'':'Still needed: '+m.join(' · ')+'.';
+  if(hCtx&&hl&&hc)document.getElementById('sn-2').classList.add('done');
+}
+function startSession(){
+  const lv=document.getElementById('langSelect').value;
+  session.language=lv==='__other__'?document.getElementById('langCustom').value.trim():lv;
+  session.code=colMap.code>=0?'(from file)':document.getElementById('codeInput').value.trim();
+  _activateSession();
+  autoSave();
+}
+function resetSession(){
+  if(!confirm('Start a new session? Your current auto-saved data will remain in storage until you clear it.'))return;
+  location.reload();
+}
+
+/* ══ TABS ══ */
+function switchTab(t){
+  ['annotate','data','lexicon','categories'].forEach(id=>{
+    const p=document.getElementById('tab-'+id);const show=id===t;
+    p.style.display=show?'flex':'none';p.classList.toggle('active',show);
+    document.getElementById('nav-'+id).classList.toggle('active',show);
+  });
+  if(t==='data')renderSaved();if(t==='lexicon')renderLexicon();if(t==='categories')renderCatManager();
+}
+
+/* ══ ROW LIST ══ */
+function gv(row,col,fb){if(col>=0&&row[col]!==undefined)return String(row[col]).trim();return fb;}
+function renderRowList(){
+  document.getElementById('row-list').innerHTML=fileRows.map((row,i)=>{
+    const ctx=gv(row,colMap.context,'');const done=savedAnnotations.some(a=>a.rowIndex===i);
+    return`<div class="row-item${done?' done':''}" onclick="selectRow(${i})" id="ri-${i}"><span class="row-num">${i+1}</span><span class="row-text">${ctx||'<em style="color:var(--ink-4)">—</em>'}</span>${done?'<span class="done-badge">done</span>':''}</div>`;
+  }).join('');updateProgress();
+}
+function updateProgress(){
+  const total=fileRows.length,done=fileRows.filter((_,i)=>savedAnnotations.some(a=>a.rowIndex===i)).length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=`${done} / ${total} annotated (${pct}%)`;
+  document.getElementById('file-status').textContent=`${total} rows`;
+}
+function selectRow(i){
+  activeRowIdx=i;document.querySelectorAll('.row-item').forEach((el,idx)=>el.classList.toggle('active',idx===i));
+  const row=fileRows[i];
+  const ctx=gv(row,colMap.context,'');
+  const np=gv(row,colMap.data,'');
+  loadPhrase(np,ctx);
+}
+
+/* ══ PHRASE ══ */
+function rowLang(){return session.language||'';}
+
+function highlightNP(ctx, np){
+  if(!np||!ctx) return escHtml(ctx);
+  // Strip trailing/leading punctuation from each NP token for a flexible match
+  const stripped=np.trim().replace(/[.,!?;:'"()\[\]{}«»]+$/,'').replace(/^[.,!?;:'"()\[\]{}«»]+/,'');
+  if(!stripped) return escHtml(ctx);
+  const escaped=stripped.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // Case-insensitive, punctuation-tolerant: match the NP followed by optional punctuation
+  const re=new RegExp('('+escaped+'[.,!?;:\'")\\]]*)', 'gi');
+  if(!re.test(ctx)) return escHtml(ctx); // no match — return safely escaped plain text
+  return escHtml(ctx).replace(new RegExp('('+escaped.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[.,!?;:\'"\\]\\)]*)', 'gi'),
+    '<mark style="background:var(--purple-light);color:var(--purple);border-radius:3px;padding:0 3px;font-weight:600">$1</mark>');
+}
+function escHtml(t){
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function loadPhrase(npText,ctx){
+  // Store raw context — never touch this again
+  rawContext=ctx||'';
+  const ctxBox=document.getElementById('context-box');
+  const ctxEl=document.getElementById('context-text');
+  if(rawContext){
+    ctxEl.innerHTML=highlightNP(rawContext,npText);
+    ctxBox.style.display='';
+  } else {
+    ctxBox.style.display='none';
+  }
+  // Set editable NP
+  document.getElementById('np-edit-area').style.display='';
+  document.getElementById('np-edit-input').value=npText;
+  // Tokenise
+  tokeniseFromInput(npText);
+}
+
+function reloadTokens(){
+  const val=document.getElementById('np-edit-input').value.trim();
+  // Re-highlight in context using stored raw text — NP edit never changes context
+  if(rawContext){
+    document.getElementById('context-text').innerHTML=highlightNP(rawContext,val);
+  }
+  tokeniseFromInput(val);
+}
+
+function tokeniseFromInput(text){
+  tokens=text.split(/\s+/).filter(Boolean).map((w,i)=>({id:i,word:w}));
+  selectedIdx=new Set();currentAnnotations=[];currentGlosses={};currentPhraseTranslation='';
+  pendingAutoTag=null;dismissBanner();hideValidation();
+  const lang=rowLang();
+  // Pre-fill glosses from lexicon
+  tokens.forEach(t=>{const base=getLexBase(t.word,lang);if(base&&base.senses.length>0)currentGlosses[t.id]=base.senses[0].gloss;});
+  renderPhrase();renderGlossPanel();renderTagOrderStrip();renderTagPickerIdle();updateStatusHint();
+}
+
+function renderPhrase(){
+  const el=document.getElementById('phrase-stage');
+  if(!tokens.length){el.innerHTML='<span class="empty-stage">No tokens — edit and click Reload.</span>';return;}
+  const lang=rowLang();
+  el.innerHTML=tokens.map(t=>{
+    const anno=currentAnnotations.find(a=>a.indices.includes(t.id));
+    const sel=selectedIdx.has(t.id);
+    const base=getLexBase(t.word,lang);
+    const hasSense=base&&base.senses.length>0;
+    const cls='word-chip'+(sel?' selected':anno?' tagged':'')+(hasSense?' has-sense':'');
+    return`<div class="${cls}" onclick="toggleToken(${t.id})">
+      <div class="token">${t.word}</div>
+      ${anno?`<div class="tag-lbl">${anno.tag}</div>`:''}
+      ${base?`<div class="lex-code">${base.lexId}</div>`:''}
+      ${anno?`<div class="ord-num">${anno.order}</div>`:''}
+      <div class="sense-dot"></div>
+    </div>`;
+  }).join('');
+}
+
+/* Grammatical gloss feature sets */
+const GRAM_GLOSSES=[
+  {group:'Plurality', items:['PL','SG']},
+  {group:'Gender',    items:['FEM','MASC','NEUT']},
+  {group:'Person',    items:['1SG','2SG','3SG','1PL','2PL','3PL']},
+  {group:'Case',      items:['GEN','POSS','LOC','REL']}
+];
+
+function appendGramGloss(tid, gram){
+  const inp=document.getElementById('gi-'+tid);if(!inp)return;
+  const cur=inp.value.trim();
+  inp.value=cur?(cur+'.'+gram):gram;
+  currentGlosses[tid]=inp.value;
+}
+
+function renderGlossPanel(){
+  const panel=document.getElementById('gloss-panel');
+  if(!tokens.length){panel.innerHTML='<div style="color:var(--ink-4);font-size:13px;font-style:italic">Load a phrase to add glosses.</div>';return;}
+  const lang=rowLang();
+
+  // Build grammatical chip palette (shared, shown once above token rows)
+  let chipPalette=`<div class="gram-palette">`;
+  GRAM_GLOSSES.forEach(grp=>{
+    chipPalette+=`<div class="gram-group"><span class="gram-group-label">${grp.group}</span>`;
+    grp.items.forEach(item=>{
+      chipPalette+=`<button class="gram-chip" onclick="appendGramGlossActive('${item}')" title="Append .${item} to selected token gloss">${item}</button>`;
+    });
+    chipPalette+=`</div>`;
+  });
+  chipPalette+=`</div>`;
+
+  let html=`<div class="gloss-panel-label">Token glosses</div>
+    ${chipPalette}
+    <div class="gram-hint">Click a chip to append to the focused gloss field, or type freely.</div>
+    <div class="gloss-tokens">`;
+
+  tokens.forEach(t=>{
+    const val=(currentGlosses[t.id]||'').replace(/"/g,'&quot;');
+    const base=getLexBase(t.word,lang);
+    const sc=base?base.senses.length:0;
+    const hint=sc>1?`${sc} senses`:sc===1?'from lexicon':'';
+    html+=`<div class="gloss-row-item">
+      <span class="gloss-word" title="${t.word}">${t.word}</span>
+      <input class="gloss-input" id="gi-${t.id}" type="text" value="${val}" placeholder="gloss…"
+             oninput="setGloss(${t.id},this.value)"
+             onfocus="activeGlossToken=${t.id}"
+             title="English or grammatical gloss for '${t.word}'">
+      <span class="gloss-suggest">${hint}</span>
+    </div>`;
+  });
+
+  html+=`</div><div class="phrase-trans-row">
+    <span class="phrase-trans-label">Translation</span>
+    <input class="phrase-trans-input" id="phrase-trans" type="text" placeholder="Type the translation…" value="${currentPhraseTranslation.replace(/"/g,'&quot;')}">
+  </div>`;
+  panel.innerHTML=html;
+}
+
+let activeGlossToken=null; // tracks which gloss input is focused for chip clicks
+
+function setGloss(tid,val){currentGlosses[tid]=val;}
+
+function appendGramGlossActive(gram){
+  // Use the focused token; fall back to the last token if none focused
+  const tid = activeGlossToken!==null ? activeGlossToken
+    : (tokens.length ? tokens[tokens.length-1].id : null);
+  if(tid===null) return;
+  const inp=document.getElementById('gi-'+tid);
+  if(!inp) return;
+  const cur=inp.value.trim();
+  inp.value=cur ? cur+'.'+gram : gram;
+  currentGlosses[tid]=inp.value;
+  inp.focus();
+}
+
+function toggleToken(id){
+  selectedIdx.has(id)?selectedIdx.delete(id):selectedIdx.add(id);
+  renderPhrase();updateStatusHint();checkAutoTag();renderTagPickerActive();
+}
+function updateStatusHint(){/* status shown via tag picker */}
+function clearSelection(){selectedIdx=new Set();renderPhrase();dismissBanner();renderTagPickerIdle();}
+function clearAll(){selectedIdx=new Set();currentAnnotations=[];renderPhrase();renderTagOrderStrip();dismissBanner();hideValidation();renderTagPickerIdle();}
+
+/* ══ TAG PICKER (three-step: category → subcategory → type) ══ */
+let tagPickerCat=null;
+let tagPickerSub=null;
+
+function renderTagPickerIdle(){
+  tagPickerCat=null;tagPickerSub=null;
+  document.getElementById('tag-picker').innerHTML='<div class="tag-picker-hint">Select token(s) to tag.</div>';
+}
+function renderTagPickerActive(){
+  if(!selectedIdx.size){renderTagPickerIdle();return;}
+  tagPickerCat=null;tagPickerSub=null;
+  const indices=[...selectedIdx].sort((a,b)=>a-b);
+  const sugs=getTagSuggestion(indices);
+  const sugCatIds=new Set(sugs.map(t=>t.split('-')[0]));
+  let html=`<div class="tag-step-label">Step 1 — Category</div><div class="tag-btn-grid">`;
+  categories.forEach(cat=>{
+    const isSug=sugCatIds.has(cat.id);
+    html+=`<button class="tag-main-btn${isSug?' suggested':''}" onclick="selectCat('${cat.id}')">${cat.label}${isSug?' ●':''}</button>`;
+  });
+  html+=`</div>`;
+  document.getElementById('tag-picker').innerHTML=html;
+}
+
+function selectCat(catId){
+  tagPickerCat=catId;tagPickerSub=null;
+  const cat=categories.find(c=>c.id===catId);if(!cat)return;
+  if(!cat.subs||!cat.subs.length){applyTag(cat.id);renderTagPickerIdle();return;}
+  const indices=[...selectedIdx].sort((a,b)=>a-b);
+  const sugs=getTagSuggestion(indices);
+  const sugSubIds=new Set(sugs.map(t=>{const p=t.split('-');return p.slice(0,2).join('-');}));
+  let html=`<button class="tag-back-btn" onclick="renderTagPickerActive()">← Back</button>
+    <div class="tag-step-label">Step 2 — Subcategory <em style="font-style:normal;font-weight:400;color:var(--ink-3)">(${cat.label})</em></div>
+    <div class="tag-btn-grid">`;
+  cat.subs.forEach(sub=>{
+    const isSug=sugSubIds.has(sub.id)||sugs.includes(sub.id);
+    html+=`<button class="tag-main-btn${isSug?' suggested':''}" onclick="selectSub('${catId}','${sub.id}')">${sub.label}${isSug?' ●':''}</button>`;
+  });
+  html+=`</div>`;
+  document.getElementById('tag-picker').innerHTML=html;
+}
+
+function selectSub(catId,subId){
+  tagPickerSub=subId;
+  const cat=categories.find(c=>c.id===catId);if(!cat)return;
+  const sub=(cat.subs||[]).find(s=>s.id===subId);if(!sub)return;
+  if(!sub.types||!sub.types.length){applyTag(sub.id);renderTagPickerIdle();return;}
+  const indices=[...selectedIdx].sort((a,b)=>a-b);
+  const sugs=new Set(getTagSuggestion(indices));
+  let html=`<button class="tag-back-btn" onclick="selectCat('${catId}')">← Back</button>
+    <div class="tag-step-label">Step 3 — Type <em style="font-style:normal;font-weight:400;color:var(--ink-3)">(${sub.label})</em></div>
+    <div class="tag-btn-grid">`;
+  sub.types.forEach(typ=>{
+    const isSug=sugs.has(typ.id);
+    html+=`<button class="tag-sub-btn${isSug?' suggested':''}" onclick="applyTag('${typ.id}');renderTagPickerIdle()">${typ.label}${isSug?' ●':''}</button>`;
+  });
+  html+=`</div>`;
+  document.getElementById('tag-picker').innerHTML=html;
+}
+
+/* ══ AUTO-TAG (from Data, exact phrase match) ══ */
+function checkAutoTag(){
+  dismissBanner();if(!selectedIdx.size)return;
+  const indices=[...selectedIdx].sort((a,b)=>a-b);
+  const sugs=getTagSuggestion(indices);
+  if(!sugs.length)return;
+  const words=indices.map(i=>tokens[i].word).join(' ');
+  if(sugs.length===1){
+    pendingAutoTag={indices,tagId:sugs[0]};
+    document.getElementById('banner-text').innerHTML=
+      `"<strong>${words}</strong>" → <span class="banner-tag">${sugs[0]}</span> (${tagLabel(sugs[0])}) — previously tagged`;
+    document.getElementById('autotag-banner').classList.add('visible');
+  } else {
+    // Multiple suggestions: show all with individual confirm buttons
+    pendingAutoTag=null;
+    const pills=sugs.map(t=>
+      `<span class="banner-tag" style="cursor:pointer" onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()" title="Click to apply">${t}</span> `+
+      `<button class="btn btn-sm btn-amber" style="padding:2px 8px;font-size:11px" onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()">✓</button>`
+    ).join('<span style="color:var(--amber-mid);margin:0 4px">|</span>');
+    document.getElementById('banner-text').innerHTML=
+      `"<strong>${words}</strong>" — ${sugs.length} previous tags: ${pills}`;
+    document.getElementById('autotag-banner').classList.add('visible');
+  }
+}
+function confirmAutoTag(){if(!pendingAutoTag)return;applyTag(pendingAutoTag.tagId);dismissBanner();renderTagPickerIdle();}
+function dismissBanner(){pendingAutoTag=null;document.getElementById('autotag-banner').classList.remove('visible');}
+
+/* ══ TAGGING ══ */
+function applyTag(tagId){
+  if(!selectedIdx.size){alert('Select one or more tokens first.');return;}
+  dismissBanner();hideValidation();
+  const indices=[...selectedIdx].sort((a,b)=>a-b);
+  const lang=rowLang();
+  const multiSense=indices.filter(i=>{const b=getLexBase(tokens[i].word,lang);return b&&b.senses.length>1;});
+  if(multiSense.length>0)showSenseModal(multiSense[0],tagId,indices);
+  else applyTagInternal(indices,tagId);
+}
+
+function applyTagInternal(indices,tagId){
+  const words=indices.map(i=>tokens[i].word).join(' ');
+  currentAnnotations=currentAnnotations.filter(a=>!a.indices.some(i=>indices.includes(i)));
+  currentAnnotations.push({indices,words,tag:tagId,order:Math.min(...indices)+1});
+  recomputeOrders();
+  selectedIdx=new Set();renderPhrase();renderTagOrderStrip();renderTagPickerIdle();
+}
+function recomputeOrders(){[...currentAnnotations].sort((a,b)=>Math.min(...a.indices)-Math.min(...b.indices)).forEach((a,i)=>a.order=i+1);}
+function deleteAnno(si){const sorted=[...currentAnnotations].sort((a,b)=>a.order-b.order);currentAnnotations=currentAnnotations.filter(a=>a!==sorted[si]);recomputeOrders();renderPhrase();renderTagOrderStrip();}
+function renderTagOrderStrip(){
+  const strip=document.getElementById('tag-order-strip');
+  const section=document.getElementById('ordering-section');
+  const sorted=[...currentAnnotations].sort((a,b)=>a.order-b.order);
+  if(!sorted.length){
+    if(section)section.style.display='none';
+    strip.innerHTML='';
+    return;
+  }
+  if(section)section.style.display='';
+  strip.innerHTML=sorted.map((a,i)=>`<span style="font-weight:600">${a.tag}</span>${i<sorted.length-1?'<span class="ord-arrow">→</span>':''}`).join('');
+}
+
+/* ══ SENSE MODAL ══ */
+let modalCtx={tokenIdx:null,tagId:null,indices:null,selectedSense:null};
+function showSenseModal(tokenIdx,tagId,indices){
+  const lang=rowLang();const base=getLexBase(tokens[tokenIdx].word,lang);
+  modalCtx={tokenIdx,tagId,indices,selectedSense:null};
+  document.getElementById('modal-word').textContent=tokens[tokenIdx].word;
+  const curGloss=currentGlosses[tokens[tokenIdx].id]||'';
+  let html='';
+  base.senses.forEach((s,si)=>{
+    html+=`<div class="sense-option" onclick="selectModalSense(${si})" id="mso-${si}">
+      <span class="sense-option-code">${s.senseId}</span>
+      <div class="sense-option-body"><em style="color:var(--ink-3)">${s.gloss||'(no gloss)'}</em>
+        <div style="font-size:11px;color:var(--ink-4);margin-top:2px">${s.phraseIds.length>0?'Phrases: '+s.phraseIds.slice(0,4).join(', ')+(s.phraseIds.length>4?'…':''):'Not used yet'}</div>
+      </div></div>`;
+  });
+  html+=`<div class="new-sense-form"><div class="new-sense-label">Create new sense</div>
+    <input type="text" id="modal-new-gloss" placeholder="Gloss (English)" value="${curGloss.replace(/"/g,'&quot;')}" style="margin-bottom:4px">
+    <button class="btn btn-sm btn-primary" onclick="selectNewSense()" style="align-self:flex-start">Use new sense</button>
+  </div>`;
+  document.getElementById('modal-body').innerHTML=html;
+  document.getElementById('sense-modal').classList.add('visible');
+}
+function selectModalSense(si){document.querySelectorAll('.sense-option').forEach((el,i)=>el.classList.toggle('selected',i===si));const lang=rowLang();const base=getLexBase(tokens[modalCtx.tokenIdx].word,lang);modalCtx.selectedSense=base.senses[si];}
+function selectNewSense(){const g=document.getElementById('modal-new-gloss').value.trim();const lang=rowLang();const base=ensureLexBase(tokens[modalCtx.tokenIdx].word,lang);const n=base.senses.length+1;const ns={senseId:base.lexId+'-S'+n,gloss:g,phraseIds:[]};base.senses.push(ns);modalCtx.selectedSense=ns;currentGlosses[tokens[modalCtx.tokenIdx].id]=g;closeModal();applyTagInternal(modalCtx.indices,modalCtx.tagId);}
+function confirmSense(){if(!modalCtx.selectedSense){alert('Select a sense first.');return;}currentGlosses[tokens[modalCtx.tokenIdx].id]=modalCtx.selectedSense.gloss||'';closeModal();applyTagInternal(modalCtx.indices,modalCtx.tagId);}
+function closeModal(){document.getElementById('sense-modal').classList.remove('visible');renderGlossPanel();}
+
+/* ══ VALIDATION ══ */
+function validatePhrase(){
+  const errors=[];
+  // Sync gloss inputs
+  tokens.forEach(t=>{const el=document.getElementById('gi-'+t.id);if(el)currentGlosses[t.id]=el.value;});
+  const ptEl=document.getElementById('phrase-trans');currentPhraseTranslation=ptEl?ptEl.value.trim():'';
+  // 1. Untagged
+  const untagged=tokens.filter(t=>!currentAnnotations.some(a=>a.indices.includes(t.id)));
+  if(untagged.length)errors.push(`Untagged: ${untagged.map(t=>'"'+t.word+'"').join(', ')}`);
+  // 2. Missing glosses
+  const unglossed=tokens.filter(t=>!(currentGlosses[t.id]||'').trim());
+  if(unglossed.length)errors.push(`Missing gloss: ${unglossed.map(t=>'"'+t.word+'"').join(', ')}`);
+  // 3. Missing translation
+  if(!currentPhraseTranslation)errors.push('Phrase translation is required.');
+  return errors;
+}
+function showValidation(errors){
+  document.getElementById('val-items').innerHTML=errors.map(e=>`<div class="val-item">• ${e}</div>`).join('');
+  document.getElementById('val-banner').classList.add('visible','error');
+  // Flash untagged
+  renderPhrase(); // re-render applies warn class
+  tokens.forEach(t=>{const inp=document.getElementById('gi-'+t.id);if(inp)inp.classList.toggle('missing',!(currentGlosses[t.id]||'').trim());});
+  const ptEl=document.getElementById('phrase-trans');if(ptEl)ptEl.classList.toggle('missing',!currentPhraseTranslation);
+  // Re-render phrase with warn highlights
+  const el=document.getElementById('phrase-stage');
+  el.querySelectorAll('.word-chip').forEach((chip,i)=>{
+    if(!tokens[i])return;
+    const tagged=currentAnnotations.some(a=>a.indices.includes(tokens[i].id));
+    chip.classList.toggle('untagged-warn',!tagged);
+  });
+}
+function hideValidation(){document.getElementById('val-banner').classList.remove('visible','error');}
+
+/* ══ COMMIT ══ */
+function commitPhrase(){
+  if(!currentAnnotations.length){alert('Add at least one annotation first.');return;}
+  const errors=validatePhrase();if(errors.length){showValidation(errors);return;}
+  hideValidation();
+
+  phraseCounter++;
+  const phraseId='PH-'+String(phraseCounter).padStart(5,'0');
+  const row=activeRowIdx>=0?fileRows[activeRowIdx]:null;
+  const language=session.language;
+  const code=row?gv(row,colMap.code,session.code):session.code;
+  const source=row?gv(row,colMap.source,''):'';
+  const context=row?gv(row,colMap.context,''):'';
+  const phrase=tokens.map(t=>t.word).join(' ');
+  const lang=rowLang();
+
+  const tokenRecords=tokens.map((t,pos)=>{
+    const gloss=currentGlosses[t.id]||'';
+    const base=ensureLexBase(t.word,lang);
+    const sense=ensureSense(base,gloss,phraseId);
+    return{tokenId:phraseId+'-T'+(pos+1),phraseId,position:pos+1,wordForm:t.word,lexId:base.lexId,senseId:sense.senseId,gloss};
+  });
+  const sorted=[...currentAnnotations].sort((a,b)=>a.order-b.order);
+  const annotations=sorted.map((a,ai)=>{
+    const{category,subcategory,type}=splitTag(a.tag);
+    return{annotationId:phraseId+'-A'+(ai+1),phraseId,order:a.order,tokens:a.words,
+           tokenIds:a.indices.map(i=>phraseId+'-T'+(i+1)),tag:a.tag,category,subcategory,type};
+  });
+
+  savedAnnotations.push({phraseId,phrase,language,code,source,dataColumn:colMap.context>=0?fileHeaders[colMap.context]:'',context,phraseTranslation:currentPhraseTranslation,rowIndex:activeRowIdx,tagSequence:sorted.map(a=>a.tag),tokenRecords,annotations,savedAt:new Date().toISOString()});
+  rebuildTagSuggestions();
+  autoSave();
+
+  currentAnnotations=[];selectedIdx=new Set();currentGlosses={};currentPhraseTranslation='';pendingAutoTag=null;
+  dismissBanner();hideValidation();renderPhrase();renderGlossPanel();renderTagOrderStrip();renderTagPickerIdle();renderRowList();
+
+  const btn=document.querySelector('[onclick="commitPhrase()"]');const orig=btn.textContent;
+  btn.textContent='Saved ✓';btn.style.cssText='background:var(--green);border-color:var(--green);color:white';
+  setTimeout(()=>{btn.textContent=orig;btn.style.cssText='';},1500);
+}
+
+/* ══ SAVED ══ */
+function renderSaved(){
+  const list=document.getElementById('saved-list');
+  document.getElementById('saved-count').textContent=savedAnnotations.length?`${savedAnnotations.length} phrase${savedAnnotations.length!==1?'s':''} saved`:'';
+  if(!savedAnnotations.length){list.innerHTML='<div class="empty-note">No saved annotations yet.</div>';return;}
+  list.innerHTML=savedAnnotations.map((s,i)=>`
+    <div class="saved-entry">
+      <div class="saved-entry-head"><span class="ph-id-chip">${s.phraseId}</span><span class="saved-phrase">${s.phrase}</span><span class="meta-chip">${s.language}</span><span class="meta-chip">${s.code}</span><button class="btn btn-sm btn-danger" onclick="deleteSaved(${i})">Remove</button></div>
+      ${s.context?`<div class="saved-ctx"><em>Context:</em> ${s.context}</div>`:''}
+      ${s.phraseTranslation?`<div class="saved-trans">${s.phraseTranslation}</div>`:''}
+      <div class="saved-body">${s.annotations.map((a,ai)=>`<span class="saved-tag-pill"><span style="opacity:.6;font-size:10px">${a.order}.</span> ${a.tokens} → ${a.tag}</span>${ai<s.annotations.length-1?'<span style="color:var(--ink-4);font-size:11px">→</span>':''}`).join('')}</div>
+      <div style="padding:0 14px 7px;display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--ink-4)">Sequence:</span><span class="ord-seq">${s.tagSequence.join(' → ')}</span></div>
+    </div>`).join('');
+}
+function deleteSaved(i){savedAnnotations.splice(i,1);rebuildTagSuggestions();autoSave();renderSaved();}
+function clearSaved(){if(confirm('Clear all saved annotations?')){savedAnnotations=[];rebuildTagSuggestions();autoSave();renderSaved();}}
+
+/* ══ LEXICON ══ */
+function hasEmptyGlosses(){return Object.values(lexicon).some(e=>e.senses.some(s=>!s.gloss||!s.gloss.trim()));}
+function renderLexicon(){
+  const q=(document.getElementById('lex-search').value||'').toLowerCase();
+  const entries=Object.values(lexicon).filter(e=>!q||e.wordForm.toLowerCase().includes(q)||e.lexId.toLowerCase().includes(q)||e.senses.some(s=>(s.gloss||'').toLowerCase().includes(q))).sort((a,b)=>a.lexId.localeCompare(b.lexId));
+  const ts=Object.values(lexicon).reduce((s,e)=>s+e.senses.length,0);
+  document.getElementById('lex-stats').textContent=`${Object.keys(lexicon).length} entries · ${ts} senses`;
+  document.getElementById('lex-warn').classList.toggle('visible',hasEmptyGlosses());
+  if(!entries.length){document.getElementById('lex-tbody').innerHTML=`<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--ink-4);font-style:italic">${Object.keys(lexicon).length?'No matches.':'Lexicon is empty — entries appear as you annotate.'}</td></tr>`;return;}
+  let html='';
+  entries.forEach(e=>{
+    const k=bk(e.wordForm,e.language);
+    html+=`<tr class="lex-base-row"><td><span class="lex-code">${e.lexId}</span></td><td><span class="lex-form">${e.wordForm}</span></td><td>${e.language||'—'}</td><td colspan="2" style="color:var(--ink-3);font-size:12px">${e.senses.length} sense${e.senses.length!==1?'s':''}</td><td><button class="icon-btn" onclick="deleteLexBase('${k}')">×</button></td></tr>`;
+    e.senses.forEach((s,si)=>{
+      const empty=!s.gloss||!s.gloss.trim();
+      html+=`<tr class="lex-sense-row"><td><span class="lex-sense-code">${s.senseId}</span></td><td style="color:var(--ink-3);font-size:12px">↳</td><td></td><td><input class="lex-edit-input${empty?' empty-warn':''}" value="${(s.gloss||'').replace(/"/g,'&quot;')}" placeholder="⚠ fill gloss" onchange="updateSense('${k}',${si},'gloss',this.value);renderLexicon()"></td><td style="max-width:180px">${s.phraseIds.slice(0,5).map(p=>`<span class="ph-pill">${p}</span>`).join('')}${s.phraseIds.length>5?`<span style="font-size:10px;color:var(--ink-4)">+${s.phraseIds.length-5}</span>`:''}</td><td><button class="icon-btn" onclick="deleteSenseRow('${k}',${si})">×</button></td></tr>`;
+    });
+    html+=`<tr><td colspan="6" style="padding:3px 12px 7px"><button class="btn btn-sm btn-ghost" onclick="addSenseRow('${k}')" style="font-size:12px;padding:3px 10px">+ Add sense</button></td></tr>`;
+  });
+  document.getElementById('lex-tbody').innerHTML=html;
+}
+function updateSense(k,si,f,v){if(lexicon[k]&&lexicon[k].senses[si]){lexicon[k].senses[si][f]=v;autoSave();}}
+function deleteLexBase(k){if(confirm('Delete this entry and all its senses?')){delete lexicon[k];autoSave();renderLexicon();}}
+function deleteSenseRow(k,si){if(confirm('Delete this sense?')){lexicon[k].senses.splice(si,1);autoSave();renderLexicon();}}
+function addSenseRow(k){if(!lexicon[k])return;const n=lexicon[k].senses.length+1;lexicon[k].senses.push({senseId:lexicon[k].lexId+'-S'+n,gloss:'',phraseIds:[]});autoSave();renderLexicon();}
+function clearLexicon(){if(confirm('Clear entire lexicon?')){lexicon={};lexCounter=0;autoSave();renderLexicon();}}
+
+/* ── Lexicon export with empty-gloss guard ── */
+function lexExportGuard(){if(hasEmptyGlosses()){alert('Cannot export: some lexicon entries have empty glosses. Please fill them in first.');return false;}return true;}
+function exportLexiconJSON(){if(!lexExportGuard())return;dl(new Blob([JSON.stringify(Object.values(lexicon),null,2)],{type:'application/json;charset=utf-8'}),`lexicon_${san(session.code||'session')}.json`);}
+function exportLexiconCSV(){
+  if(!lexExportGuard())return;
+  const rows=[['lex_id','sense_id','word_form','language','gloss','phrase_ids']];
+  Object.values(lexicon).forEach(e=>e.senses.forEach(s=>rows.push([e.lexId,s.senseId,e.wordForm,e.language,s.gloss,s.phraseIds.join('; ')])));
+  dl(new Blob([utf8CSV(rows)],{type:'text/csv;charset=utf-8'}),`lexicon_${san(session.code||'session')}.csv`);
+}
+function exportLexiconXLSX(){
+  if(!lexExportGuard())return;
+  const data=[];Object.values(lexicon).forEach(e=>e.senses.forEach(s=>data.push({lex_id:e.lexId,sense_id:s.senseId,word_form:e.wordForm,language:e.language,gloss:s.gloss,phrase_ids:s.phraseIds.join('; ')})));
+  const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data,{header:['lex_id','sense_id','word_form','language','gloss','phrase_ids']});ws['!cols']=[{wch:12},{wch:14},{wch:18},{wch:14},{wch:24},{wch:30}];XLSX.utils.book_append_sheet(wb,ws,'lexicon');
+  XLSX.writeFile(wb,`lexicon_${san(session.code||'session')}.xlsx`,{bookType:'xlsx',type:'binary'});
+}
+
+/* ══ MAIN EXPORT ══ */
+function utf8CSV(rows){return'\uFEFF'+rows.map(r=>r.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');}
+function san(s){return s.replace(/[^a-zA-Z0-9_\-]/g,'_');}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();}
+function buildTables(){
+  const phrases=savedAnnotations.map(s=>({
+    phrase_id:s.phraseId,phrase:s.phrase,phrase_translation:s.phraseTranslation||'',
+    language:s.language,code:s.code,context:s.context,
+    tag_sequence:s.tagSequence.join(' → '),saved_at:s.savedAt
+  }));
+  const tokens_tbl=[];
+  savedAnnotations.forEach(s=>s.tokenRecords.forEach(t=>tokens_tbl.push(t)));
+  const annos_tbl=[];
+  savedAnnotations.forEach(s=>s.annotations.forEach(a=>{
+    const{category,subcategory,type}=splitTag(a.tag);
+    annos_tbl.push({
+      annotation_id:a.annotationId,phrase_id:a.phraseId,order:a.order,
+      tokens:a.tokens,token_ids:a.tokenIds.join(', '),
+      tag:a.tag,category,subcategory,type
+    });
+  }));
+  return{phrases,tokens_tbl,annos_tbl};
+}
+function exportXLSX(){
+  if(!savedAnnotations.length){alert('No annotations saved yet.');return;}
+  const{phrases,tokens_tbl,annos_tbl}=buildTables();
+  const wb=XLSX.utils.book_new();
+  const toSheet=(data,cols)=>{
+    const ws=XLSX.utils.json_to_sheet(data,{header:cols});
+    const mw={};cols.forEach(c=>{mw[c]=c.length;});
+    data.forEach(row=>cols.forEach(c=>{const v=String(row[c]||'');if(v.length>mw[c])mw[c]=Math.min(v.length,60);}));
+    ws['!cols']=cols.map(c=>({wch:mw[c]+2}));return ws;
+  };
+  XLSX.utils.book_append_sheet(wb,toSheet(phrases,
+    ['phrase_id','phrase','phrase_translation','language','code','context','tag_sequence','saved_at']),'phrases');
+  XLSX.utils.book_append_sheet(wb,toSheet(tokens_tbl,
+    ['tokenId','phraseId','position','wordForm','lexId','senseId','gloss']),'tokens');
+  XLSX.utils.book_append_sheet(wb,toSheet(annos_tbl,
+    ['annotation_id','phrase_id','order','tokens','token_ids','tag','category','subcategory','type']),'annotations');
+  XLSX.writeFile(wb,`np_${san(session.code||'annotations')}.xlsx`,{bookType:'xlsx',type:'binary'});
+}
+function exportJSON(){
+  const{phrases,tokens_tbl,annos_tbl}=buildTables();
+  const out={
+    session:{language:session.language,code:session.code,exportedAt:new Date().toISOString()},
+    phrases,tokens:tokens_tbl,annotations:annos_tbl
+  };
+  dl(new Blob([JSON.stringify(out,null,2)],{type:'application/json;charset=utf-8'}),
+     `np_${san(session.code||'annotations')}.json`);
+}
+function exportCSV(){
+  if(!savedAnnotations.length){alert('No annotations saved yet.');return;}
+  const{phrases,tokens_tbl,annos_tbl}=buildTables();
+
+  // Table 1: Phrases (one row per phrase — Primary Key: phrase_id)
+  const phraseCols=['phrase_id','phrase','phrase_translation','language','code','context','tag_sequence','saved_at'];
+  const phraseRows=[phraseCols,...phrases.map(p=>phraseCols.map(c=>p[c]||''))];
+  dl(new Blob([utf8CSV(phraseRows)],{type:'text/csv;charset=utf-8'}),
+     `np_phrases_${san(session.code||'session')}.csv`);
+
+  // Table 2: Tokens (one row per token — Foreign Key: phrase_id → phrases.phrase_id)
+  const tokenCols=['tokenId','phraseId','position','wordForm','lexId','senseId','gloss'];
+  const tokenRows=[tokenCols,...tokens_tbl.map(t=>tokenCols.map(c=>t[c]||''))];
+  dl(new Blob([utf8CSV(tokenRows)],{type:'text/csv;charset=utf-8'}),
+     `np_tokens_${san(session.code||'session')}.csv`);
+
+  // Table 3: Annotations (one row per annotation — Foreign Key: phrase_id)
+  const annoCols=['annotation_id','phrase_id','order','tokens','token_ids','tag','category','subcategory','type'];
+  const annoRows=[annoCols,...annos_tbl.map(a=>annoCols.map(c=>a[c]||''))];
+  dl(new Blob([utf8CSV(annoRows)],{type:'text/csv;charset=utf-8'}),
+     `np_annotations_${san(session.code||'session')}.csv`);
+}
+
+/* ══ CATEGORY MANAGER ══ */
+function renderCatManager(){
+  document.getElementById('cat-manager').innerHTML=categories.map((cat,ci)=>`
+    <div class="cat-manage-item">
+      <div class="cat-manage-head">
+        <span class="cat-manage-label">${cat.label}</span>
+        <span class="cat-manage-id">${cat.id}</span>
+        <button class="btn btn-sm" onclick="addSubCat(${ci})" style="margin-left:auto">+ Subcategory</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCat(${ci})">Delete</button>
+      </div>
+      ${(cat.subs||[]).length?`<div class="cat-manage-subs">${cat.subs.map((s,si)=>`
+        <div class="sub-manage-item" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <div style="display:flex;align-items:center;gap:8px;width:100%">
+            <span style="flex:1">${s.label}</span>
+            <span class="sub-id">${s.id}</span>
+            <button class="btn btn-sm btn-ghost" style="padding:2px 8px;font-size:11px" onclick="addType(${ci},${si})">+ Type</button>
+            <button class="icon-btn" onclick="deleteSub(${ci},${si})">×</button>
+          </div>
+          ${(s.types||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;padding-left:12px">${s.types.map((t,ti)=>`
+            <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius);background:var(--accent-light);font-size:12px;color:var(--accent)">
+              ${t.label} <span style="font-family:monospace;font-size:10px;opacity:.6">${t.id}</span>
+              <button class="icon-btn" style="width:14px;height:14px;font-size:12px" onclick="deleteType(${ci},${si},${ti})">×</button>
+            </div>`).join('')}</div>`:''}
+        </div>`).join('')}</div>`:''}
+    </div>`).join('');
+}
+function addMainCat(){
+  const n=document.getElementById('newCatName').value.trim();if(!n)return;
+  categories.push({id:n.toUpperCase().replace(/[^A-Z0-9]+/g,'-'),label:n,subs:[]});
+  document.getElementById('newCatName').value='';autoSave();renderCatManager();
+}
+function deleteCat(i){if(!confirm(`Delete "${categories[i].label}"?`))return;categories.splice(i,1);autoSave();renderCatManager();}
+function addSubCat(ci){
+  const n=prompt(`Subcategory name for "${categories[ci].label}":`);if(!n)return;
+  categories[ci].subs.push({id:categories[ci].id+'-'+n.toUpperCase().replace(/[^A-Z0-9]+/g,'-'),label:n,types:[]});
+  autoSave();renderCatManager();
+}
+function deleteSub(ci,si){categories[ci].subs.splice(si,1);autoSave();renderCatManager();}
+function addType(ci,si){
+  const n=prompt(`Type name for "${categories[ci].subs[si].label}":`);if(!n)return;
+  if(!categories[ci].subs[si].types)categories[ci].subs[si].types=[];
+  categories[ci].subs[si].types.push({id:categories[ci].subs[si].id+'-'+n.toUpperCase().replace(/[^A-Z0-9]+/g,'-'),label:n});
+  autoSave();renderCatManager();
+}
+function deleteType(ci,si,ti){categories[ci].subs[si].types.splice(ti,1);autoSave();renderCatManager();}
+
+/* ══ PAGE LOAD ══ */
+checkStorageOnLoad();
+</script>
+</body>
+</html>
