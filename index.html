@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,7 +118,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* ══ ANNOTATE LAYOUT ══ */
 .annotate-layout{
   display:grid;
-  grid-template-columns:minmax(160px,200px) 1fr 1fr 1fr;
+  grid-template-columns:minmax(160px,200px) minmax(260px,1.5fr) minmax(180px,1fr) minmax(180px,1fr);
   gap:1rem;
   align-items:start;
   min-width:0;
@@ -345,7 +346,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <body>
 
 <header>
-  <div class="logo" onclick="goHome()" style="cursor:pointer" title="Go to main page"><span class="logo-dot"></span> NP Annotator</div>
+  <div class="logo"><span class="logo-dot"></span> NP Annotator</div>
   <div class="session-strip" id="session-strip">
     <div class="session-chip"><span class="lbl">lang&nbsp;</span><span class="val" id="sh-lang"></span></div>
     <div class="session-chip"><span class="lbl">code&nbsp;</span><span class="val" id="sh-code"></span></div>
@@ -425,26 +426,32 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <!-- Step 2: Column mapping -->
   <div class="step-card locked" id="sc-2">
-    <div class="step-header"><div class="step-num" id="sn-2">2</div><span class="step-title">Map columns &amp; set language</span><span class="step-subtitle">All fields required</span></div>
+    <div class="step-header"><div class="step-num" id="sn-2">2</div><span class="step-title">Map columns &amp; set language</span><span class="step-subtitle">Context required · others optional</span></div>
     <div class="step-body">
       <div class="col-map-grid">
         <!-- Context: REQUIRED -->
         <div>
           <div class="map-badge" style="color:var(--purple)"><span class="badge-dot" style="background:var(--purple)"></span> Context column <span class="required-star">*</span></div>
           <select id="sel-context" onchange="onColMapChange()"><option value="">— select —</option></select>
-          <div class="field-hint">Column containing the full source sentence.</div>
+          <div class="field-hint">Full source sentence. Required.</div>
         </div>
-        <!-- Data: REQUIRED -->
+        <!-- Data: OPTIONAL -->
         <div>
-          <div class="map-badge" style="color:var(--accent)"><span class="badge-dot" style="background:var(--accent)"></span> Data column <span class="required-star">*</span></div>
-          <select id="sel-data" onchange="onColMapChange()"><option value="">— select —</option></select>
-          <div class="field-hint">Column containing the noun phrase to annotate.</div>
+          <div class="map-badge" style="color:var(--accent)"><span class="badge-dot" style="background:var(--accent)"></span> Data column <span style="font-size:11px;color:var(--ink-4);font-weight:400">optional</span></div>
+          <select id="sel-data" onchange="onColMapChange()"><option value="">— none / edit manually —</option></select>
+          <div class="field-hint">Pre-filled noun phrase. Editable on annotation screen.</div>
         </div>
-        <!-- Data Code: from column, REQUIRED -->
+        <!-- Source Name: OPTIONAL -->
         <div>
-          <div class="map-badge" style="color:var(--amber)"><span class="badge-dot" style="background:var(--amber)"></span> Data code column <span class="required-star">*</span></div>
-          <select id="sel-code" onchange="onColMapChange()"><option value="">— select —</option></select>
-          <div class="field-hint">Column with per-row corpus or data identifier.</div>
+          <div class="map-badge" style="color:var(--teal)"><span class="badge-dot" style="background:var(--teal)"></span> Source name <span style="font-size:11px;color:var(--ink-4);font-weight:400">optional</span></div>
+          <select id="sel-source" onchange="onColMapChange()"><option value="">— none —</option></select>
+          <div class="field-hint">Name of the source text or document.</div>
+        </div>
+        <!-- Data Code: from column, OPTIONAL -->
+        <div>
+          <div class="map-badge" style="color:var(--amber)"><span class="badge-dot" style="background:var(--amber)"></span> Data code column <span style="font-size:11px;color:var(--ink-4);font-weight:400">optional</span></div>
+          <select id="sel-code" onchange="onColMapChange()"><option value="">— none —</option></select>
+          <div class="field-hint">Per-row corpus or data identifier from file.</div>
         </div>
         <!-- Language: required dropdown -->
         <div>
@@ -460,17 +467,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <input type="text" id="langCustom" placeholder="Type language name" style="display:none;margin-top:6px" oninput="validateSetup()">
           <div class="field-hint">Language of this dataset.</div>
         </div>
-        <!-- Source Name: typeable text, REQUIRED -->
-        <div>
-          <div class="map-badge" style="color:var(--teal)"><span class="badge-dot" style="background:var(--teal)"></span> Source name <span class="required-star">*</span></div>
-          <input type="text" id="sourceNameInput" placeholder="e.g. BNC Corpus, OPUS-TR" oninput="validateSetup()">
-          <div class="field-hint">Name of the source corpus or document collection.</div>
-        </div>
         <!-- Dataset code: manual text, REQUIRED -->
         <div>
           <div class="map-badge" style="color:var(--red)"><span class="badge-dot" style="background:var(--red)"></span> Dataset code <span class="required-star">*</span></div>
-          <input type="text" id="codeInput" placeholder="e.g. TR-01, EN-WIKI-A" oninput="validateSetup()">
-          <div class="field-hint">Short identifier for this annotation batch.</div>
+          <input type="text" id="codeInput" placeholder="e.g. TR-01, EN-WIKI-A" oninput="validateSetup()" style="margin-top:0">
+          <div class="field-hint">Short identifier for this annotation session.</div>
         </div>
       </div>
       <div style="margin-top:1rem"><div class="section-label">Preview</div><div class="col-table-wrap" id="col-table-wrap"></div><div class="col-legend" id="col-legend"></div></div>
@@ -650,17 +651,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 </main>
-
-<footer style="text-align:center;padding:1.5rem 2rem;border-top:var(--border);font-size:12px;color:var(--ink-4);background:white;margin-top:2rem">
-  Developed by <strong style="color:var(--ink-3)">Taha Yangın</strong>
-  &nbsp;·&nbsp;
-  <a href="https://github.com/tahayangin" target="_blank" rel="noopener"
-     style="color:var(--accent);text-decoration:none;font-weight:500">
-    github.com/tahayangin
-  </a>
-  &nbsp;·&nbsp;
-  NP Annotator
-</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -983,9 +973,9 @@ function importLexicon(e){
 
 
 function populateColSelects(){
-  ['data','code','context'].forEach(role=>{
+  ['data','code','context','source'].forEach(role=>{
     const sel=document.getElementById('sel-'+role);if(!sel)return;
-    sel.innerHTML='<option value="">— select —</option>';
+    sel.innerHTML=role==='context'?'<option value="">— select —</option>':'<option value="">— none —</option>';
     fileHeaders.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h;sel.appendChild(o);});
     const g=autoGuess(role);if(g>=0)sel.value=g;
   });syncColMap();
@@ -994,7 +984,8 @@ function autoGuess(r){
   const p={
     data:[/\bnp\b/i,/noun.?phrase/i,/phrase/i,/\bdata\b/i],
     code:[/\bcode\b/i,/corpus/i,/dataset/i],
-    context:[/context/i,/sentence/i,/\bsent\b/i,/full/i,/example/i,/text/i]
+    context:[/context/i,/sentence/i,/\bsent\b/i,/full/i,/example/i,/text/i],
+    source:[/source/i,/\bsrc\b/i,/\bbook\b/i,/\bdoc\b/i,/title/i,/name/i]
   };
   for(const pat of(p[r]||[])){const i=fileHeaders.findIndex(h=>pat.test(h));if(i>=0)return i;}
   return -1;
@@ -1003,7 +994,7 @@ function syncColMap(){
   colMap.data   = parseInt(document.getElementById('sel-data'   )?.value)||  -1;
   colMap.code   = parseInt(document.getElementById('sel-code'   )?.value)||  -1;
   colMap.context= parseInt(document.getElementById('sel-context')?.value)||  -1;
-  colMap.source = -1; // source is now a typed text field, not a column
+  colMap.source = parseInt(document.getElementById('sel-source' )?.value)||  -1;
   colMap.lang   = -1;
 }
 function onColMapChange(){syncColMap();renderColTable();if(colMap.context>=0){document.getElementById('sn-2').classList.add('done');}validateSetup();}
@@ -1023,47 +1014,22 @@ function renderColTable(){
 function unlockStep(id){document.getElementById(id).classList.remove('locked');}
 function onLangChange(){const v=document.getElementById('langSelect').value;document.getElementById('langCustom').style.display=v==='__other__'?'':'none';validateSetup();}
 function validateSetup(){
-  const hf=fileRows.length>0;
-  const hCtx=colMap.context>=0;
-  const hData=colMap.data>=0;
-  const hColCode=colMap.code>=0;
+  const hf=fileRows.length>0,hCtx=colMap.context>=0;
   const lv=document.getElementById('langSelect').value,lc=document.getElementById('langCustom').value.trim();
   const hl=(lv&&lv!=='__other__')||(lv==='__other__'&&lc.length>0);
-  const hSrc=(document.getElementById('sourceNameInput')?.value||'').trim().length>0;
-  const hDsCode=document.getElementById('codeInput').value.trim().length>0;
-  const ok=hf&&hCtx&&hData&&hColCode&&hl&&hSrc&&hDsCode;
+  const hc=colMap.code>=0||document.getElementById('codeInput').value.trim().length>0;
+  const ok=hf&&hCtx&&hl&&hc;
   document.getElementById('start-btn').disabled=!ok;
-  const m=[];
-  if(!hCtx)    m.push('select context column');
-  if(!hData)   m.push('select data column');
-  if(!hColCode)m.push('select data code column');
-  if(!hl)      m.push('select language');
-  if(!hSrc)    m.push('enter source name');
-  if(!hDsCode) m.push('enter dataset code');
+  const m=[];if(!hCtx)m.push('select context column');if(!hl)m.push('select language');if(!hc)m.push('set dataset code');
   document.getElementById('setup-msg').textContent=ok?'':'Still needed: '+m.join(' · ')+'.';
-  if(ok) document.getElementById('sn-2').classList.add('done');
+  if(hCtx&&hl&&hc)document.getElementById('sn-2').classList.add('done');
 }
 function startSession(){
   const lv=document.getElementById('langSelect').value;
   session.language=lv==='__other__'?document.getElementById('langCustom').value.trim():lv;
-  session.code=document.getElementById('codeInput').value.trim();
-  session.sourceName=document.getElementById('sourceNameInput').value.trim();
+  session.code=colMap.code>=0?'(from file)':document.getElementById('codeInput').value.trim();
   _activateSession();
   autoSave();
-}
-function goHome(){
-  if(savedAnnotations.length>0){
-    if(!confirm('Go back to the main setup screen? Your annotated data is auto-saved and will be restored next time.'))return;
-  }
-  // Show setup, hide annotate view, keep all state intact
-  document.getElementById('setup-screen').style.display='';
-  document.getElementById('session-strip').classList.remove('visible');
-  ['annotate','data','lexicon','categories'].forEach(id=>{
-    document.getElementById('nav-'+id).disabled=true;
-    const p=document.getElementById('tab-'+id);
-    p.style.display='none';p.classList.remove('active');
-  });
-  document.getElementById('nav-annotate').classList.add('active');
 }
 function resetSession(){
   if(!confirm('Start a new session? Your current auto-saved data will remain in storage until you clear it.'))return;
@@ -1334,23 +1300,14 @@ function checkAutoTag(){
       `"<strong>${words}</strong>" → <span class="banner-tag">${sugs[0]}</span> (${tagLabel(sugs[0])}) — previously tagged`;
     document.getElementById('autotag-banner').classList.add('visible');
   } else {
-    // Multiple suggestions: show each on its own row
+    // Multiple suggestions: show all with individual confirm buttons
     pendingAutoTag=null;
-    const rows=sugs.map(t=>
-      `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
-        <span class="banner-tag">${t}</span>
-        <span style="font-size:12px;color:var(--amber)">${tagLabel(t)}</span>
-        <button class="btn btn-sm btn-amber" style="padding:2px 10px;font-size:11px;margin-left:auto"
-          onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()">✓ Confirm</button>
-      </div>`
-    ).join('');
+    const pills=sugs.map(t=>
+      `<span class="banner-tag" style="cursor:pointer" onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()" title="Click to apply">${t}</span> `+
+      `<button class="btn btn-sm btn-amber" style="padding:2px 8px;font-size:11px" onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()">✓</button>`
+    ).join('<span style="color:var(--amber-mid);margin:0 4px">|</span>');
     document.getElementById('banner-text').innerHTML=
-      `<div style="display:flex;flex-direction:column;gap:2px;width:100%">
-        <div style="font-size:12px;color:var(--amber);margin-bottom:4px">
-          "<strong>${words}</strong>" — ${sugs.length} previous tags:
-        </div>
-        ${rows}
-      </div>`;
+      `"<strong>${words}</strong>" — ${sugs.length} previous tags: ${pills}`;
     document.getElementById('autotag-banner').classList.add('visible');
   }
 }
@@ -1461,7 +1418,7 @@ function commitPhrase(){
   const row=activeRowIdx>=0?fileRows[activeRowIdx]:null;
   const language=session.language;
   const code=row?gv(row,colMap.code,session.code):session.code;
-  const source=session.sourceName||'';
+  const source=row?gv(row,colMap.source,''):'';
   const context=row?gv(row,colMap.context,''):'';
   const phrase=tokens.map(t=>t.word).join(' ');
   const lang=rowLang();
@@ -1673,8 +1630,7 @@ function deleteType(ci,si,ti){categories[ci].subs[si].types.splice(ti,1);autoSav
 /* ══ PAGE LOAD ══ */
 checkStorageOnLoad();
 </script>
-
-<footer style="text-align:center;padding:1.5rem 2rem;border-top:var(--border);font-size:12px;color:var(--ink-4);background:white;margin-top:2rem">
+  <footer style="text-align:center;padding:1.5rem 2rem;border-top:var(--border);font-size:12px;color:var(--ink-4);background:white;margin-top:2rem">
   Developed by <a href="https://www.linkedin.com/in/tahayangin/" style="text-decoration:none;">
   <strong style="color:var(--ink-3)">Taha Yangın</strong>
 </a>
@@ -1686,8 +1642,5 @@ checkStorageOnLoad();
   &nbsp;·&nbsp;
   NP Annotator
 </footer>
-
-<script src="script.js"></script>
-
 </body>
 </html>
