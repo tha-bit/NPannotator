@@ -318,9 +318,9 @@ function importLexicon(e){
 
 
 function populateColSelects(){
-  ['data','code','context','source'].forEach(role=>{
+  ['data','code','context'].forEach(role=>{
     const sel=document.getElementById('sel-'+role);if(!sel)return;
-    sel.innerHTML=role==='context'?'<option value="">— select —</option>':'<option value="">— none —</option>';
+    sel.innerHTML='<option value="">— select —</option>';
     fileHeaders.forEach((h,i)=>{const o=document.createElement('option');o.value=i;o.textContent=h;sel.appendChild(o);});
     const g=autoGuess(role);if(g>=0)sel.value=g;
   });syncColMap();
@@ -329,8 +329,7 @@ function autoGuess(r){
   const p={
     data:[/\bnp\b/i,/noun.?phrase/i,/phrase/i,/\bdata\b/i],
     code:[/\bcode\b/i,/corpus/i,/dataset/i],
-    context:[/context/i,/sentence/i,/\bsent\b/i,/full/i,/example/i,/text/i],
-    source:[/source/i,/\bsrc\b/i,/\bbook\b/i,/\bdoc\b/i,/title/i,/name/i]
+    context:[/context/i,/sentence/i,/\bsent\b/i,/full/i,/example/i,/text/i]
   };
   for(const pat of(p[r]||[])){const i=fileHeaders.findIndex(h=>pat.test(h));if(i>=0)return i;}
   return -1;
@@ -339,7 +338,7 @@ function syncColMap(){
   colMap.data   = parseInt(document.getElementById('sel-data'   )?.value)||  -1;
   colMap.code   = parseInt(document.getElementById('sel-code'   )?.value)||  -1;
   colMap.context= parseInt(document.getElementById('sel-context')?.value)||  -1;
-  colMap.source = parseInt(document.getElementById('sel-source' )?.value)||  -1;
+  colMap.source = -1; // source is now a typed text field, not a column
   colMap.lang   = -1;
 }
 function onColMapChange(){syncColMap();renderColTable();if(colMap.context>=0){document.getElementById('sn-2').classList.add('done');}validateSetup();}
@@ -359,22 +358,47 @@ function renderColTable(){
 function unlockStep(id){document.getElementById(id).classList.remove('locked');}
 function onLangChange(){const v=document.getElementById('langSelect').value;document.getElementById('langCustom').style.display=v==='__other__'?'':'none';validateSetup();}
 function validateSetup(){
-  const hf=fileRows.length>0,hCtx=colMap.context>=0;
+  const hf=fileRows.length>0;
+  const hCtx=colMap.context>=0;
+  const hData=colMap.data>=0;
+  const hColCode=colMap.code>=0;
   const lv=document.getElementById('langSelect').value,lc=document.getElementById('langCustom').value.trim();
   const hl=(lv&&lv!=='__other__')||(lv==='__other__'&&lc.length>0);
-  const hc=colMap.code>=0||document.getElementById('codeInput').value.trim().length>0;
-  const ok=hf&&hCtx&&hl&&hc;
+  const hSrc=(document.getElementById('sourceNameInput')?.value||'').trim().length>0;
+  const hDsCode=document.getElementById('codeInput').value.trim().length>0;
+  const ok=hf&&hCtx&&hData&&hColCode&&hl&&hSrc&&hDsCode;
   document.getElementById('start-btn').disabled=!ok;
-  const m=[];if(!hCtx)m.push('select context column');if(!hl)m.push('select language');if(!hc)m.push('set dataset code');
+  const m=[];
+  if(!hCtx)    m.push('select context column');
+  if(!hData)   m.push('select data column');
+  if(!hColCode)m.push('select data code column');
+  if(!hl)      m.push('select language');
+  if(!hSrc)    m.push('enter source name');
+  if(!hDsCode) m.push('enter dataset code');
   document.getElementById('setup-msg').textContent=ok?'':'Still needed: '+m.join(' · ')+'.';
-  if(hCtx&&hl&&hc)document.getElementById('sn-2').classList.add('done');
+  if(ok) document.getElementById('sn-2').classList.add('done');
 }
 function startSession(){
   const lv=document.getElementById('langSelect').value;
   session.language=lv==='__other__'?document.getElementById('langCustom').value.trim():lv;
-  session.code=colMap.code>=0?'(from file)':document.getElementById('codeInput').value.trim();
+  session.code=document.getElementById('codeInput').value.trim();
+  session.sourceName=document.getElementById('sourceNameInput').value.trim();
   _activateSession();
   autoSave();
+}
+function goHome(){
+  if(savedAnnotations.length>0){
+    if(!confirm('Go back to the main setup screen? Your annotated data is auto-saved and will be restored next time.'))return;
+  }
+  // Show setup, hide annotate view, keep all state intact
+  document.getElementById('setup-screen').style.display='';
+  document.getElementById('session-strip').classList.remove('visible');
+  ['annotate','data','lexicon','categories'].forEach(id=>{
+    document.getElementById('nav-'+id).disabled=true;
+    const p=document.getElementById('tab-'+id);
+    p.style.display='none';p.classList.remove('active');
+  });
+  document.getElementById('nav-annotate').classList.add('active');
 }
 function resetSession(){
   if(!confirm('Start a new session? Your current auto-saved data will remain in storage until you clear it.'))return;
@@ -645,14 +669,23 @@ function checkAutoTag(){
       `"<strong>${words}</strong>" → <span class="banner-tag">${sugs[0]}</span> (${tagLabel(sugs[0])}) — previously tagged`;
     document.getElementById('autotag-banner').classList.add('visible');
   } else {
-    // Multiple suggestions: show all with individual confirm buttons
+    // Multiple suggestions: show each on its own row
     pendingAutoTag=null;
-    const pills=sugs.map(t=>
-      `<span class="banner-tag" style="cursor:pointer" onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()" title="Click to apply">${t}</span> `+
-      `<button class="btn btn-sm btn-amber" style="padding:2px 8px;font-size:11px" onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()">✓</button>`
-    ).join('<span style="color:var(--amber-mid);margin:0 4px">|</span>');
+    const rows=sugs.map(t=>
+      `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
+        <span class="banner-tag">${t}</span>
+        <span style="font-size:12px;color:var(--amber)">${tagLabel(t)}</span>
+        <button class="btn btn-sm btn-amber" style="padding:2px 10px;font-size:11px;margin-left:auto"
+          onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()">✓ Confirm</button>
+      </div>`
+    ).join('');
     document.getElementById('banner-text').innerHTML=
-      `"<strong>${words}</strong>" — ${sugs.length} previous tags: ${pills}`;
+      `<div style="display:flex;flex-direction:column;gap:2px;width:100%">
+        <div style="font-size:12px;color:var(--amber);margin-bottom:4px">
+          "<strong>${words}</strong>" — ${sugs.length} previous tags:
+        </div>
+        ${rows}
+      </div>`;
     document.getElementById('autotag-banner').classList.add('visible');
   }
 }
@@ -763,7 +796,7 @@ function commitPhrase(){
   const row=activeRowIdx>=0?fileRows[activeRowIdx]:null;
   const language=session.language;
   const code=row?gv(row,colMap.code,session.code):session.code;
-  const source=row?gv(row,colMap.source,''):'';
+  const source=session.sourceName||'';
   const context=row?gv(row,colMap.context,''):'';
   const phrase=tokens.map(t=>t.word).join(' ');
   const lang=rowLang();
