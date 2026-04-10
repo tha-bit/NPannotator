@@ -118,23 +118,30 @@ function checkStorageOnLoad(){
 }
 
 function restoreFromStorage(){
+  // If we already have state in memory (called from goHome), just re-activate
+  if(fileRows.length>0 && session.language){
+    dismissRestoreBanner();
+    _activateSession();
+    document.getElementById('autosave-bar').style.display='flex';
+    updateAutoSaveBar();
+    return;
+  }
+  // Otherwise read from localStorage (page-load restore)
   try{
     const raw=localStorage.getItem(LS_KEY);
     if(!raw) return;
     const snap=JSON.parse(raw);
 
-    // Restore all state
-    session        = snap.session        || {language:'',code:''};
-    fileHeaders    = snap.fileHeaders    || [];
-    fileRows       = snap.fileRows       || [];
-    colMap         = snap.colMap         || {data:-1,lang:-1,code:-1,context:-1};
-    categories     = snap.categories     || JSON.parse(JSON.stringify(DEFAULT_CATS));
-    phraseCounter  = snap.phraseCounter  || 0;
-    lexCounter     = snap.lexCounter     || 0;
+    session          = snap.session          || {language:'',code:''};
+    fileHeaders      = snap.fileHeaders      || [];
+    fileRows         = snap.fileRows         || [];
+    colMap           = snap.colMap           || {data:-1,lang:-1,code:-1,context:-1,source:-1};
+    categories       = snap.categories       || JSON.parse(JSON.stringify(DEFAULT_CATS));
+    phraseCounter    = snap.phraseCounter    || 0;
+    lexCounter       = snap.lexCounter       || 0;
     savedAnnotations = snap.savedAnnotations || [];
     tagSuggestions   = snap.tagSuggestions   || {};
 
-    // Restore lexicon
     lexicon={};
     (snap.lexicon||[]).forEach(e=>{
       if(e.lexId&&e.wordForm){
@@ -143,7 +150,6 @@ function restoreFromStorage(){
       }
     });
 
-    // Hide restore banner, boot into annotate view
     dismissRestoreBanner();
     _activateSession();
     document.getElementById('autosave-bar').style.display='flex';
@@ -335,10 +341,11 @@ function autoGuess(r){
   return -1;
 }
 function syncColMap(){
-  colMap.data   = parseInt(document.getElementById('sel-data'   )?.value)||  -1;
-  colMap.code   = parseInt(document.getElementById('sel-code'   )?.value)||  -1;
-  colMap.context= parseInt(document.getElementById('sel-context')?.value)||  -1;
-  colMap.source = -1; // source is now a typed text field, not a column
+  const parse=id=>{const v=document.getElementById(id)?.value;return(v===''||v===null||v===undefined)?-1:parseInt(v);};
+  colMap.data   = parse('sel-data');
+  colMap.code   = parse('sel-code');
+  colMap.context= parse('sel-context');
+  colMap.source = -1;
   colMap.lang   = -1;
 }
 function onColMapChange(){syncColMap();renderColTable();if(colMap.context>=0){document.getElementById('sn-2').classList.add('done');}validateSetup();}
@@ -388,9 +395,9 @@ function startSession(){
 }
 function goHome(){
   if(savedAnnotations.length>0){
-    if(!confirm('Go back to the main setup screen? Your annotated data is auto-saved and will be restored next time.'))return;
+    if(!confirm('Go back to the main page? Your annotated data is auto-saved.'))return;
   }
-  // Show setup, hide annotate view, keep all state intact
+  // Show setup screen
   document.getElementById('setup-screen').style.display='';
   document.getElementById('session-strip').classList.remove('visible');
   ['annotate','data','lexicon','categories'].forEach(id=>{
@@ -399,6 +406,17 @@ function goHome(){
     p.style.display='none';p.classList.remove('active');
   });
   document.getElementById('nav-annotate').classList.add('active');
+
+  // Show the resume banner if we have saved work
+  if(savedAnnotations.length>0||Object.keys(lexicon).length>0){
+    const banner=document.getElementById('restore-banner');
+    if(banner){
+      const count=savedAnnotations.length;
+      banner.querySelector('strong').textContent=
+        'Session in progress — '+count+' phrase'+(count!==1?'s':'')+' annotated';
+      banner.classList.add('visible');
+    }
+  }
 }
 function resetSession(){
   if(!confirm('Start a new session? Your current auto-saved data will remain in storage until you clear it.'))return;
@@ -663,31 +681,42 @@ function checkAutoTag(){
   const sugs=getTagSuggestion(indices);
   if(!sugs.length)return;
   const words=indices.map(i=>tokens[i].word).join(' ');
+  const bt=document.getElementById('banner-text');
+
   if(sugs.length===1){
+    // Single suggestion — one confirm + change
     pendingAutoTag={indices,tagId:sugs[0]};
-    document.getElementById('banner-text').innerHTML=
-      `"<strong>${words}</strong>" → <span class="banner-tag">${sugs[0]}</span> (${tagLabel(sugs[0])}) — previously tagged`;
-    document.getElementById('autotag-banner').classList.add('visible');
+    bt.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="color:var(--amber);font-size:13px">Suggestion:</span>
+        <span style="font-size:13px;color:var(--ink)">"<strong>${words}</strong>"</span>
+        <span class="banner-tag">${sugs[0]}</span>
+        <span style="font-size:12px;color:var(--amber)">${tagLabel(sugs[0])}</span>
+        <button class="btn btn-sm btn-amber" style="margin-left:auto" onclick="confirmAutoTag()">Confirm</button>
+        <button class="btn btn-sm" onclick="dismissBanner()">Change</button>
+      </div>`;
   } else {
-    // Multiple suggestions: show each on its own row
+    // Multiple suggestions — stacked rows, each with its own confirm
     pendingAutoTag=null;
-    const rows=sugs.map(t=>
-      `<div style="display:flex;align-items:center;gap:6px;padding:3px 0">
+    const rows=sugs.map(t=>`
+      <div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(125,78,15,.1)">
         <span class="banner-tag">${t}</span>
         <span style="font-size:12px;color:var(--amber)">${tagLabel(t)}</span>
         <button class="btn btn-sm btn-amber" style="padding:2px 10px;font-size:11px;margin-left:auto"
           onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()">✓ Confirm</button>
-      </div>`
-    ).join('');
-    document.getElementById('banner-text').innerHTML=
-      `<div style="display:flex;flex-direction:column;gap:2px;width:100%">
-        <div style="font-size:12px;color:var(--amber);margin-bottom:4px">
+      </div>`).join('');
+    bt.innerHTML=`
+      <div style="width:100%">
+        <div style="font-size:12px;color:var(--amber);margin-bottom:5px">
           "<strong>${words}</strong>" — ${sugs.length} previous tags:
         </div>
         ${rows}
+        <div style="padding-top:5px;text-align:right">
+          <button class="btn btn-sm" onclick="dismissBanner()">Dismiss</button>
+        </div>
       </div>`;
-    document.getElementById('autotag-banner').classList.add('visible');
   }
+  document.getElementById('autotag-banner').classList.add('visible');
 }
 function confirmAutoTag(){if(!pendingAutoTag)return;applyTag(pendingAutoTag.tagId);dismissBanner();renderTagPickerIdle();}
 function dismissBanner(){pendingAutoTag=null;document.getElementById('autotag-banner').classList.remove('visible');}
