@@ -1,4 +1,4 @@
-<script>
+
 /* ══ DEFAULT CATEGORIES — 3-level: category → subcategory → type ══ */
 const DEFAULT_CATS=[
   {id:'NOUN',label:'Noun',subs:[
@@ -1036,4 +1036,3 @@ function deleteType(ci,si,ti){categories[ci].subs[si].types.splice(ti,1);autoSav
 
 /* ══ PAGE LOAD ══ */
 checkStorageOnLoad();
-</script>
