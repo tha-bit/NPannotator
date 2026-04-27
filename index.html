@@ -77,6 +77,81 @@
         <input type="checkbox" id="has-header-cb" onchange="toggleHeaderRow()" style="width:auto;cursor:pointer">
         <span>First row treated as header</span>
       </div>
+      <!-- Sample Data subsection -->
+      <div class="sample-data-section">
+        <div class="section-label">Sample data</div>
+        <p class="sample-data-intro">
+          Don't have your own data yet? Download one of the example files below to explore how the annotator works.
+        </p>
+        <div class="sample-file-list">
+ 
+          <div class="sample-file-item">
+            <div class="sample-file-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div class="sample-file-info">
+              <span class="sample-file-name">sample_english_nps.csv</span>
+              <span class="sample-file-desc">English noun phrases</span>
+            </div>
+            <a href="tha-bit/NPannotator/Sample/sample_english_nps.csv" class="btn btn-sm sample-download-btn" download title="Download English sample">
+              ↓ Download
+            </a>
+          </div>
+ 
+          <div class="sample-file-item">
+            <div class="sample-file-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div class="sample-file-info">
+              <span class="sample-file-name">sample_turkish_nps.csv</span>
+              <span class="sample-file-desc">Turkish noun phrases</span>
+            </div>
+            <a href="" class="btn btn-sm sample-download-btn" download title="Download Turkish sample">
+              ↓ Download
+            </a>
+          </div>
+ 
+          <div class="sample-file-item">
+            <div class="sample-file-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div class="sample-file-info">
+              <span class="sample-file-name">sample_spanish_nps.csv</span>
+              <span class="sample-file-desc">Spanish noun phrases</span>
+            </div>
+            <a href="" class="btn btn-sm sample-download-btn" download title="Download Spanish sample">
+              ↓ Download
+            </a>
+          </div>
+ 
+        </div>
+        <p class="sample-data-note">
+          ℹ Each sample file contains three columns: <code>context</code> (the source sentence),
+          <code>np</code> (the noun phrase to annotate), and <code>code</code> (a short dataset identifier).
+          Map these columns in Step 2 after uploading.
+        </p>
+      </div>
+ 
+      <div>
+        <div class="section-label">Import saved lexicon (optional)</div>
+        <div class="upload-zone" style="padding:.9rem" onclick="document.getElementById('lexInput').click()">
+          <p style="font-size:13px"><strong>Import lexicon JSON</strong> — restore token codes from a previous session</p>
+        </div>
+        <input type="file" id="lexInput" accept=".json" style="display:none" onchange="importLexicon(event)">
+        <div id="lex-import-note" style="display:none;font-size:12px;color:var(--green);margin-top:.4rem"></div>
+      </div>
+    </div>
+  </div>
+
 
       <div>
         <div class="section-label">Import saved lexicon (optional)</div>
