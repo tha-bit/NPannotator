@@ -1,3 +1,4 @@
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#1a1a18;--ink-2:#4a4a45;--ink-3:#8a8a82;--ink-4:#c4c4bc;
@@ -313,7 +314,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 }
 .as-restore-banner.visible{display:flex}
   .annotate-layout{grid-template-columns:minmax(150px,190px) minmax(160px,200px) minmax(0,1fr) minmax(0,1fr)}
-
+}
 @media(max-width:1000px){
   header{padding:0 1rem}
   main{padding:1rem}
@@ -331,4 +332,97 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   .col-map-grid{grid-template-columns:1fr}
   header{padding:0 .75rem}
   main{padding:.75rem}
+}
+/* ── Sample Data section ── */
+.sample-data-section{
+  border:var(--border);
+  border-radius:var(--radius-lg);
+  padding:1rem 1.25rem;
+  background:var(--paper-2);
+}
+.sample-data-intro{
+  font-size:13px;
+  color:var(--ink-3);
+  margin-bottom:.875rem;
+  line-height:1.6;
+}
+.sample-file-list{
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  margin-bottom:.875rem;
+}
+.sample-file-item{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  padding:.6rem .875rem;
+  background:white;
+  border:var(--border);
+  border-radius:var(--radius);
+  transition:box-shadow .15s;
+}
+.sample-file-item:hover{
+  box-shadow:var(--shadow-sm);
+}
+.sample-file-icon{
+  color:var(--accent);
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+}
+.sample-file-info{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.sample-file-name{
+  font-family:'Source Code Pro',monospace;
+  font-size:12px;
+  font-weight:500;
+  color:var(--ink);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sample-file-desc{
+  font-size:12px;
+  color:var(--ink-3);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sample-download-btn{
+  flex-shrink:0;
+  color:var(--accent);
+  border-color:var(--accent-mid);
+  background:var(--accent-light);
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+}
+.sample-download-btn:hover{
+  background:var(--accent);
+  color:white;
+  border-color:var(--accent);
+}
+.sample-data-note{
+  font-size:12px;
+  color:var(--ink-3);
+  line-height:1.6;
+  padding:.6rem .75rem;
+  background:white;
+  border-radius:var(--radius);
+  border-left:3px solid var(--accent-mid);
+  margin-bottom:0;
+}
+.sample-data-note code{
+  font-family:'Source Code Pro',monospace;
+  font-size:11px;
+  background:var(--paper-2);
+  padding:1px 5px;
+  border-radius:3px;
+  color:var(--accent);
 }
