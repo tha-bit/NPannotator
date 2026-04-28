@@ -66,16 +66,16 @@
   <!-- Step 1: Upload or resume -->
   <div class="step-card" id="sc-1">
     <div class="step-header"><div class="step-num" id="sn-1">1</div><span class="step-title">Upload data file</span><span class="step-subtitle">CSV or Excel · UTF-8</span></div>
-    <div class="step-body" style="display:flex;flex-direction:column;gap:1rem">
-      <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+    <div class="step-body">
+    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4M12 4v12"/></svg>
         <p><strong>Click to upload</strong> — .csv · .xlsx · .xls</p>
       </div>
-      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFile(event)">
-      <div id="file-note" style="display:none;padding:9px 14px;border-radius:var(--radius);background:var(--green-light);color:var(--green);font-size:13px;font-weight:500"></div>
-      <div id="header-toggle-wrap" style="display:none;margin-top:.4rem;display:none;align-items:center;gap:.5rem;font-size:13px;color:var(--ink-3)">
-        <input type="checkbox" id="has-header-cb" onchange="toggleHeaderRow()" style="width:auto;cursor:pointer">
-        <span>First row treated as header</span>
+        <div id="file-note" class="note note-success"></div>
+        <div id="header-toggle-wrap" style="display:none;margin-top:.4rem;display:none;align-items:center;gap:.5rem;font-size:13px;color:var(--ink-3)">
+          <input type="checkbox" id="has-header-cb" onchange="toggleHeaderRow()" style="width:auto;cursor:pointer">
+          <span>First row treated as header</span>
+
       </div>
 
       <!-- Sample Data subsection -->

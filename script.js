@@ -1036,3 +1036,17 @@ function deleteType(ci,si,ti){categories[ci].subs[si].types.splice(ti,1);autoSav
 
 /* ══ PAGE LOAD ══ */
 checkStorageOnLoad();
+
+  // Highlight active sidebar link on scroll
+  const sections = document.querySelectorAll('.doc-section, .doc-hero');
+  const links    = document.querySelectorAll('.sidebar-link');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.sidebar-link[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
