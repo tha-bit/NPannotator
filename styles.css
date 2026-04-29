@@ -582,3 +582,21 @@ kbd{display:inline-block;padding:2px 8px;border-radius:4px;border:1px solid var(
   line-height: 1.5;
 }
 
+/* Header block */
+.setup-header {
+  margin-bottom: 1.75rem;
+}
+
+/* Title */
+.setup-title {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 0.3rem;
+}
+
+/* Subtitle */
+.setup-explanation {
+  font-size: 14px;
+  color: var(--ink-3);
+}
