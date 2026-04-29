@@ -190,25 +190,43 @@
           <div class="field-hint">Column containing the noun phrase to annotate.</div>
         </div>
         <!-- Data Code: from column, REQUIRED -->
-        <div>
-          <div class="map-badge" style="color:var(--amber)"><span class="badge-dot" style="background:var(--amber)"></span> Data code column <span class="required-star">*</span></div>
-          <select id="sel-code" onchange="onColMapChange()"><option value="">— select —</option></select>
-          <div class="field-hint">Column with per-row corpus or data identifier.</div>
-        </div>
+<div>
+  <label for="sel-code" class="map-badge" style="color:var(--amber)">
+    <span class="badge-dot" style="background:var(--amber)"></span>
+    Data code column <span class="required-star">*</span>
+  </label>
+
+  <select id="sel-code" onchange="onColMapChange()">
+    <option value="">— select —</option>
+  </select>
         <!-- Language: required dropdown -->
-        <div>
-          <div class="map-badge" style="color:var(--green)"><span class="badge-dot" style="background:var(--green)"></span> Language <span class="required-star">*</span></div>
-          <select id="langSelect" onchange="onLangChange()">
-            <option value="">— select —</option>
-            <option>Turkish</option><option>English</option><option>German</option><option>French</option>
-            <option>Arabic</option><option>Persian</option><option>Japanese</option><option>Chinese</option>
-            <option>Spanish</option><option>Italian</option><option>Russian</option><option>Dutch</option>
-            <option>Polish</option><option>Portuguese</option><option>Korean</option><option>Hebrew</option>
-            <option>Greek</option><option>Hungarian</option><option value="__other__">Other…</option>
-          </select>
-          <input type="text" id="langCustom" placeholder="Type language name" style="display:none;margin-top:6px" oninput="validateSetup()">
-          <div class="field-hint">Language of this dataset.</div>
-        </div>
+<div>
+  <label for="langSelect" class="map-badge" style="color:var(--green)">
+    <span class="badge-dot" style="background:var(--green)"></span>
+    Language <span class="required-star">*</span>
+  </label>
+
+  <select id="langSelect" onchange="onLangChange()">
+    <option value="">— select —</option>
+    <option>Turkish</option><option>English</option><option>German</option><option>French</option>
+    <option>Arabic</option><option>Persian</option><option>Japanese</option><option>Chinese</option>
+    <option>Spanish</option><option>Italian</option><option>Russian</option><option>Dutch</option>
+    <option>Polish</option><option>Portuguese</option><option>Korean</option><option>Hebrew</option>
+    <option>Greek</option><option>Hungarian</option>
+    <option value="__other__">Other…</option>
+  </select>
+
+  <label for="langCustom" style="display:none;">Custom language</label>
+  <input
+    type="text"
+    id="langCustom"
+    placeholder="Type language name"
+    style="display:none;margin-top:6px"
+    oninput="validateSetup()"
+  >
+
+  <div class="field-hint">Language of this dataset.</div>
+</div>
         <!-- Source Name: typeable text, REQUIRED -->
         <div>
           <div class="map-badge" style="color:var(--teal)"><span class="badge-dot" style="background:var(--teal)"></span> Source name <span class="required-star">*</span></div>
