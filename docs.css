@@ -479,3 +479,27 @@ footer a:hover { text-decoration: underline; }
   .wf-arrow { transform: rotate(90deg); }
   header { padding: 0 1rem; }
 }
+
+@font-face {
+    font-family: 'Libre Baskerville';
+    src: url('LibreBaskerville-Italic.woff2') format('woff2')
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Libre Baskerville';
+    src: url('LibreBaskerville-Regular.woff2') format('woff2'),
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Source Sans 3';
+    src: url('SourceSans3-Regular.woff2') format('woff2'),
+        url('SourceSans3-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
