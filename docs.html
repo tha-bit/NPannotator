@@ -3,489 +3,664 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Documentation | NP Annotator</title>
+<title>NP Annotator — Documentation</title>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-
+<link rel="stylesheet" href="docs.css">
 </head>
 <body>
 
+<!-- ══ HEADER ══ -->
 <header>
-
-  
-  <div class="logo" style="cursor:pointer" title="Go to main page"><span class="logo-dot"></span> <a href="index.html">NP Annotator</a></div>
-  <div class="session-strip" id="session-strip">
-    <div class="session-chip"><span class="lbl">lang&nbsp;</span><span class="val" id="sh-lang"></span></div>
-    <div class="session-chip"><span class="lbl">code&nbsp;</span><span class="val" id="sh-code"></span></div>
-    <div class="session-chip"><span class="lbl">col&nbsp;</span><span class="val" id="sh-col"></span></div>
-    <button class="btn btn-sm btn-ghost" onclick="resetSession()">↺ New session</button>
-  </div>
-
- 
-
-  <nav>
-    <button class="nb active" id="nav-annotate"  onclick="switchTab('annotate')"  disabled>Annotate</button>
-    <button class="nb"        id="nav-data"       onclick="switchTab('data')"       disabled>Data</button>
-    <button class="nb"        id="nav-lexicon"    onclick="switchTab('lexicon')"    disabled>Lexicon</button>
-    <button class="nb"        id="nav-categories" onclick="switchTab('categories')" disabled>Categories</button>
-
-  </nav>
-
-     <a href="docs.html" class="docs-link" target="_blank" rel="noopener" title="Open documentation">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
-      <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-    </svg>
-    Documentation
+  <a href="index.html" class="logo" title="Back to NP Annotator">
+    <span class="logo-dot"></span>
+    NP Annotator
+  </a>
+  <a href="index.html" class="back-link">
+    ← Back to app
   </a>
 </header>
 
+<!-- ══ PAGE LAYOUT ══ -->
 <div class="docs-layout">
 
   <!-- ══ SIDEBAR ══ -->
-  <aside class="docs-sidebar">
-    <span class="sidebar-label">Overview</span>
-    <a href="#intro"      class="sidebar-link active"><span class="sidebar-dot"></span>What is NP Annotator</a>
-    <a href="#workflow"   class="sidebar-link"><span class="sidebar-dot"></span>Workflow at a glance</a>
+  <nav class="sidebar" aria-label="Documentation navigation">
 
-    <span class="sidebar-label">Setup</span>
-    <a href="#upload"     class="sidebar-link"><span class="sidebar-dot"></span>Uploading a file</a>
-    <a href="#columns"    class="sidebar-link"><span class="sidebar-dot"></span>Mapping columns</a>
-    <a href="#session"    class="sidebar-link"><span class="sidebar-dot"></span>Session settings</a>
+    <div class="sidebar-heading">Introduction</div>
+    <a href="#what-is"  class="sidebar-link">What is NP Annotator?</a>
+    <a href="#workflow" class="sidebar-link">Workflow overview</a>
 
-    <span class="sidebar-label">Using the tool</span>
-    <a href="#annotate"   class="sidebar-link"><span class="sidebar-dot"></span>Annotate tab</a>
-    <a href="#tags"       class="sidebar-link"><span class="sidebar-dot"></span>Tag selection</a>
-    <a href="#gloss"      class="sidebar-link"><span class="sidebar-dot"></span>Gloss panel</a>
-    <a href="#data"       class="sidebar-link"><span class="sidebar-dot"></span>Data tab</a>
-    <a href="#lexicon"    class="sidebar-link"><span class="sidebar-dot"></span>Lexicon tab</a>
-    <a href="#categories" class="sidebar-link"><span class="sidebar-dot"></span>Categories tab</a>
+    <div class="sidebar-heading">Getting started</div>
+    <a href="#upload"   class="sidebar-link">Upload a file</a>
+    <a href="#columns"  class="sidebar-link">Map columns</a>
+    <a href="#session"  class="sidebar-link">Session settings</a>
 
-    <span class="sidebar-label">Reference</span>
-    <a href="#autosave"   class="sidebar-link"><span class="sidebar-dot"></span>Auto-save</a>
-    <a href="#export"     class="sidebar-link"><span class="sidebar-dot"></span>Exporting data</a>
-    <a href="#tips"       class="sidebar-link"><span class="sidebar-dot"></span>Tips &amp; shortcuts</a>
-  </aside>
+    <div class="sidebar-heading">Annotation</div>
+    <a href="#annotate" class="sidebar-link">Annotate page</a>
+    <a href="#tags"     class="sidebar-link">Tag selection</a>
+    <a href="#gloss"    class="sidebar-link">Gloss panel</a>
+    <a href="#saving"   class="sidebar-link">Saving a phrase</a>
+
+    <div class="sidebar-heading">Reference</div>
+    <a href="#data-tab"   class="sidebar-link">Data tab</a>
+    <a href="#lexicon"    class="sidebar-link">Lexicon</a>
+    <a href="#categories" class="sidebar-link">Categories</a>
+
+    <div class="sidebar-heading">Advanced</div>
+    <a href="#autosave" class="sidebar-link">Auto-save</a>
+    <a href="#export"   class="sidebar-link">Export formats</a>
+    <a href="#tips"     class="sidebar-link">Tips &amp; shortcuts</a>
+
+  </nav>
 
   <!-- ══ CONTENT ══ -->
   <main class="docs-content">
 
-    <!-- ── Hero ── -->
-    <div class="doc-hero" id="intro">
-      <div class="doc-hero-text">
-        <h1>NP Annotator</h1>
-        <p>
-          NP Annotator is a browser-based tool for linguists and corpus researchers to tag, gloss,
-          and categorise noun phrases from uploaded datasets. It runs entirely in your browser —
-          no server, no account, no data leaves your computer.
-        </p>
-        <div class="doc-hero-badge-row">
-          <span class="badge badge-accent">Browser-based</span>
-          <span class="badge badge-green">No installation</span>
-          <span class="badge badge-teal">CSV &amp; Excel input</span>
-          <span class="badge badge-amber">XLSX / CSV / JSON export</span>
-          <span class="badge badge-purple">Auto-save</span>
+    <h1 class="doc-title">NP Annotator Documentation</h1>
+    <p class="doc-subtitle">
+      A structured annotation tool for noun phrases across multiple languages —
+      designed for linguists, corpus researchers, and language data curators.
+    </p>
+
+    <!-- ── What is NP Annotator ── -->
+    <section class="doc-section" id="what-is">
+      <h2 class="section-title">What is NP Annotator?</h2>
+      <p>
+        NP Annotator is a browser-based tool for annotating noun phrases (NPs) in structured linguistic datasets.
+        You upload a file containing source sentences and their extracted noun phrases, then work through each row
+        assigning grammatical tags, glosses, and translations — all stored locally in your browser with no server required.
+      </p>
+      <p>
+        The tool supports multiple languages (including UTF-8 scripts such as Turkish, Arabic, and Persian),
+        a three-level tag hierarchy (Category → Subcategory → Type), per-token grammatical glossing with
+        preset chips, and a persistent lexicon that carries gloss suggestions across phrases.
+      </p>
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <div class="callout-body">
+          <strong>No data leaves your browser.</strong>
+          All annotation work is stored in <code>localStorage</code>. Nothing is sent to any server.
+          Export your data manually when you are ready.
         </div>
       </div>
-    </div>
+    </section>
+
+    <hr class="divider">
 
     <!-- ── Workflow ── -->
     <section class="doc-section" id="workflow">
-      <div class="doc-section-title">Workflow at a glance</div>
-      <p class="doc-section-intro">
-        Annotation follows a linear five-step process. Once a session is started, you can move freely
-        between the Annotate, Data, Lexicon, and Categories tabs.
-      </p>
-      <div class="doc-block">
-        <div class="doc-block-body">
-          <div class="workflow">
-            <div class="workflow-step">📂 Upload file</div>
-            <span class="workflow-arrow">→</span>
-            <div class="workflow-step">⚙️ Map columns</div>
-            <span class="workflow-arrow">→</span>
-            <div class="workflow-step">🏷 Tag tokens</div>
-            <span class="workflow-arrow">→</span>
-            <div class="workflow-step">✏️ Add glosses</div>
-            <span class="workflow-arrow">→</span>
-            <div class="workflow-step">💾 Save &amp; export</div>
-          </div>
+      <h2 class="section-title">Workflow overview</h2>
+      <p>The annotation process follows a linear five-step flow:</p>
+
+      <div class="workflow">
+        <div class="wf-step">
+          <span class="wf-step-num">Step 1</span>
+          <span class="wf-step-label">Upload</span>
+          <span class="wf-step-sub">CSV or Excel</span>
+        </div>
+        <span class="wf-arrow">→</span>
+        <div class="wf-step">
+          <span class="wf-step-num">Step 2</span>
+          <span class="wf-step-label">Map columns</span>
+          <span class="wf-step-sub">Context, Data, Code</span>
+        </div>
+        <span class="wf-arrow">→</span>
+        <div class="wf-step">
+          <span class="wf-step-num">Step 3</span>
+          <span class="wf-step-label">Configure</span>
+          <span class="wf-step-sub">Language &amp; codes</span>
+        </div>
+        <span class="wf-arrow">→</span>
+        <div class="wf-step">
+          <span class="wf-step-num">Step 4</span>
+          <span class="wf-step-label">Annotate</span>
+          <span class="wf-step-sub">Tag · Gloss · Save</span>
+        </div>
+        <span class="wf-arrow">→</span>
+        <div class="wf-step">
+          <span class="wf-step-num">Step 5</span>
+          <span class="wf-step-label">Export</span>
+          <span class="wf-step-sub">XLSX · CSV · JSON</span>
         </div>
       </div>
-      <div class="doc-block">
-        <div class="doc-block-body">
-          <p>Each row in your dataset corresponds to one noun phrase. You work through the list row by row in the <strong>Annotate</strong> tab. Saved annotations accumulate in the <strong>Data</strong> tab. Token glosses build your <strong>Lexicon</strong>. The tag vocabulary is fully managed in the <strong>Categories</strong> tab.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">✦</span>
+        <div class="callout-body">
+          <strong>Resume at any time.</strong>
+          Your progress is auto-saved to <code>localStorage</code> after every phrase. Close the tab, reopen the file,
+          and click <em>Resume session</em> to continue exactly where you left off.
         </div>
       </div>
     </section>
+
+    <hr class="divider">
 
     <!-- ── Upload ── -->
     <section class="doc-section" id="upload">
-      <div class="doc-section-title">Uploading a file</div>
-      <p class="doc-section-intro">
-        NP Annotator accepts <strong>CSV</strong>, <strong>.xlsx</strong>, and <strong>.xls</strong> files.
-        Files are read locally — nothing is uploaded to any server.
+      <h2 class="section-title">Upload a file</h2>
+      <p>
+        NP Annotator accepts <strong>CSV</strong> (.csv), <strong>Excel</strong> (.xlsx), and legacy Excel (.xls) files.
+        CSV files are read with explicit UTF-8 encoding, so characters such as <em>ş, ğ, ı, ü, ö, ç</em> (Turkish),
+        Arabic, Persian, and other scripts are handled correctly.
       </p>
-      <div class="doc-block">
-        <div class="doc-block-header">
-          <div class="doc-block-icon" style="background:var(--accent-light);color:var(--accent)">📂</div>
-          <span class="doc-block-title">Supported formats</span>
-        </div>
-        <div class="doc-block-body" style="padding:0">
-          <table class="doc-table">
-            <thead><tr><th>Format</th><th>Extension</th><th>Notes</th></tr></thead>
-            <tbody>
-              <tr><td>CSV</td><td><code>.csv</code></td><td>UTF-8 encoding recommended. Use a comma delimiter.</td></tr>
-              <tr><td>Excel</td><td><code>.xlsx</code></td><td>Modern Excel format. First sheet is used.</td></tr>
-              <tr><td>Legacy Excel</td><td><code>.xls</code></td><td>Older format; supported but UTF-8 behaviour may vary.</td></tr>
-            </tbody>
-          </table>
+
+      <h3 class="subsection-title">Header row detection</h3>
+      <p>
+        The tool auto-detects whether the first row is a header or data by checking whether all values in row 1
+        are non-numeric. If the first row looks like data, column names are generated automatically
+        (<code>Column 1</code>, <code>Column 2</code>, …). You can override this with the
+        <em>"First row treated as header"</em> checkbox that appears after upload.
+      </p>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠</span>
+        <div class="callout-body">
+          <strong>Column 0 issue.</strong>
+          If your data column is the very first column in the file, make sure to select it explicitly
+          in the column mapping step. Column index 0 is valid and fully supported.
         </div>
       </div>
-      <div class="callout callout-tip">
-        <span class="callout-icon">💡</span>
-        <span>Don't have data yet? Download one of the sample files on the home screen to explore the tool before using your own dataset.</span>
+
+      <h3 class="subsection-title">File structure requirements</h3>
+      <p>Your file must contain at least a <strong>Context</strong> column (required) and ideally a
+      <strong>Data</strong> column and a <strong>Data Code</strong> column:</p>
+
+      <div class="code-block">
+context,np,code
+"The old man walked past the red building.","the red building","EN-01"
+"Benim kırmızı kedilerim çok aktif.","kırmızı kedilerim","TR-01"
+"Der kleine schwarze Hund bellt laut.","Der kleine schwarze Hund","DE-01"
       </div>
-      <div class="callout callout-note">
-        <span class="callout-icon">⚠️</span>
-        <span>If your file has no header row, uncheck <strong>"First row treated as header"</strong> after uploading. Columns will be labelled A, B, C… instead.</span>
-      </div>
-      <div class="doc-block" style="margin-top:.75rem">
-        <div class="doc-block-header">
-          <div class="doc-block-icon" style="background:var(--teal-light);color:var(--teal)">📥</div>
-          <span class="doc-block-title">Importing a saved lexicon</span>
-        </div>
-        <div class="doc-block-body">
-          <p>If you have a <code>.json</code> lexicon file exported from a previous session, you can import it in the same upload step. This restores all prior token glosses so you do not have to re-enter them for words that appear again in the new dataset.</p>
+
+      <div class="callout note">
+        <span class="callout-icon">📁</span>
+        <div class="callout-body">
+          <strong>Sample files available.</strong>
+          If you don't have your own data yet, download one of the sample .csv files shown on the upload screen.
+          Each sample is pre-structured with the three required columns.
         </div>
       </div>
     </section>
+
+    <hr class="divider">
 
     <!-- ── Column mapping ── -->
     <section class="doc-section" id="columns">
-      <div class="doc-section-title">Mapping columns</div>
-      <p class="doc-section-intro">
-        After uploading, you must map six fields before the session can start. All are required.
-        A live preview shows the first rows of your file with column roles highlighted.
+      <h2 class="section-title">Map columns</h2>
+      <p>
+        After uploading, you assign a role to each column in your file. All fields in Step 2 are required.
+        The preview table colour-codes your selections so you can visually confirm the mapping before proceeding.
       </p>
-      <div class="doc-block">
-        <div class="doc-block-body" style="padding:0">
-          <table class="doc-table">
-            <thead><tr><th>Field</th><th>Colour</th><th>Description</th></tr></thead>
-            <tbody>
-              <tr>
-                <td>Context column</td>
-                <td><span class="badge badge-purple">purple</span></td>
-                <td>The full source sentence in which the noun phrase appears. Shown as context during annotation.</td>
-              </tr>
-              <tr>
-                <td>Data column</td>
-                <td><span class="badge badge-accent">blue</span></td>
-                <td>The noun phrase itself — the text that will be tokenised and tagged.</td>
-              </tr>
-              <tr>
-                <td>Data code column</td>
-                <td><span class="badge badge-amber">amber</span></td>
-                <td>A per-row identifier from your dataset (e.g. a sentence ID or corpus code).</td>
-              </tr>
-              <tr>
-                <td>Language</td>
-                <td><span class="badge badge-green">green</span></td>
-                <td>Language of the dataset. Choose from the list or select "Other…" to type a custom name.</td>
-              </tr>
-              <tr>
-                <td>Source name</td>
-                <td><span class="badge badge-teal">teal</span></td>
-                <td>Free-text name for the source corpus or document collection (e.g. "BNC Corpus").</td>
-              </tr>
-              <tr>
-                <td>Dataset code</td>
-                <td><span class="badge badge-red">red</span></td>
-                <td>Short identifier for this annotation batch (e.g. "EN-01"). Included in all exports.</td>
-              </tr>
-            </tbody>
-          </table>
+
+      <table class="col-map-table">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Status</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="col-name">context</span></td>
+            <td><span class="badge badge-required">Required</span></td>
+            <td>The full source sentence the NP was extracted from. Shown above the phrase in the annotate workspace. The NP is highlighted within it if a match is found.</td>
+          </tr>
+          <tr>
+            <td><span class="col-name">data</span></td>
+            <td><span class="badge badge-required">Required</span></td>
+            <td>The noun phrase to annotate. Pre-fills the editable NP field. Can be corrected inline if the source data contains errors.</td>
+          </tr>
+          <tr>
+            <td><span class="col-name">data code</span></td>
+            <td><span class="badge badge-required">Required</span></td>
+            <td>A per-row corpus or data identifier read from the file (e.g. <code>EN-01</code>, <code>TR-BNC-003</code>). Stored alongside every saved annotation.</td>
+          </tr>
+          <tr>
+            <td>Language</td>
+            <td><span class="badge badge-required">Required</span></td>
+            <td>Select the language of the entire dataset from the dropdown. This is a session-level constant — it applies to every row in the file. Used as the key in the lexicon.</td>
+          </tr>
+          <tr>
+            <td>Source name</td>
+            <td><span class="badge badge-required">Required</span></td>
+            <td>A free-text label for the source corpus or document collection (e.g. <em>BNC Corpus</em>, <em>OPUS-TR</em>). Not read from a column — typed once for the whole session.</td>
+          </tr>
+          <tr>
+            <td>Dataset code</td>
+            <td><span class="badge badge-required">Required</span></td>
+            <td>A short session-level identifier (e.g. <code>TR-01</code>). Appears in all exports and saved phrase records.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">✦</span>
+        <div class="callout-body">
+          <strong>Auto-detection.</strong>
+          Column selects are pre-populated by scanning header names for common patterns
+          (<code>context</code>, <code>sentence</code>, <code>np</code>, <code>phrase</code>, <code>code</code>, etc.).
+          Check the preview table to confirm the auto-detection is correct before clicking Start.
         </div>
-      </div>
-      <div class="callout callout-tip">
-        <span class="callout-icon">💡</span>
-        <span>The live preview highlights each column in its mapped colour. Use it to verify mappings are correct before starting.</span>
       </div>
     </section>
 
-    <!-- ── Session ── -->
+    <hr class="divider">
+
+    <!-- ── Session settings ── -->
     <section class="doc-section" id="session">
-      <div class="doc-section-title">Session settings</div>
-      <div class="doc-block">
-        <div class="doc-block-body">
-          <p>Once a session is active, a <strong>session strip</strong> appears in the header showing the current language, dataset code, and column mapping. You can start a new session at any time using the <strong>↺ New session</strong> button — this resets the view but your saved annotations in the Data tab are preserved unless you explicitly clear them.</p>
-          <p>Session settings (language, source name, dataset code) are fixed for the lifetime of a session and are embedded in every saved annotation.</p>
-        </div>
-      </div>
+      <h2 class="section-title">Session settings</h2>
+      <p>
+        Once all column fields are filled and <em>Start annotating</em> is clicked, your session becomes active.
+        The header shows a strip of session chips displaying the current language, dataset code, and context column.
+      </p>
+      <p>
+        Clicking <strong>↺ New session</strong> reloads the page. Your auto-saved data remains in
+        <code>localStorage</code> and can be resumed at any time — a <em>Resume session</em> banner
+        appears automatically on the next page load.
+      </p>
+      <p>
+        Clicking the <strong>NP Annotator</strong> logo returns you to the setup screen without discarding data.
+        If you have unsaved annotation progress on the current phrase it will be lost, but all previously
+        <em>saved</em> phrases remain intact.
+      </p>
     </section>
 
-    <!-- ── Annotate ── -->
+    <hr class="divider">
+
+    <!-- ── Annotate page ── -->
     <section class="doc-section" id="annotate">
-      <div class="doc-section-title">Annotate tab</div>
-      <p class="doc-section-intro">
-        The main workspace. It has four panels arranged side by side: Rows, Noun phrase, Tag selection, and Gloss.
-      </p>
-      <div class="doc-block">
-        <div class="doc-block-body" style="padding:0">
-          <div class="doc-step">
-            <div class="doc-step-num">1</div>
-            <div class="doc-step-body">
-              <div class="doc-step-title">Select a row</div>
-              <div class="doc-step-desc">Click any row in the <strong>Rows</strong> panel on the left. The noun phrase and its context sentence load immediately. Rows marked <span class="badge badge-green" style="font-size:10px">done</span> have already been saved.</div>
-            </div>
+      <h2 class="section-title">Annotate page</h2>
+      <p>The annotate workspace is divided into four columns:</p>
+
+      <ol class="step-list">
+        <li>
+          <span class="step-num-badge">1</span>
+          <div class="step-body">
+            <strong>Rows</strong> — a scrollable list of every row in your file.
+            Each row shows the context sentence. Completed rows are marked with a green <em>done</em> badge.
+            A progress bar at the bottom shows overall completion.
           </div>
-          <div class="doc-step">
-            <div class="doc-step-num">2</div>
-            <div class="doc-step-body">
-              <div class="doc-step-title">Edit the noun phrase (optional)</div>
-              <div class="doc-step-desc">The <strong>Noun phrase</strong> panel shows an editable text field pre-filled from your data column. Edit it if needed, then click <kbd>↺</kbd> to re-tokenise. Changes only affect this annotation — your source file is not modified.</div>
-            </div>
+        </li>
+        <li>
+          <span class="step-num-badge">2</span>
+          <div class="step-body">
+            <strong>Noun phrase</strong> — shows the source sentence with the NP highlighted in purple,
+            and an editable text field below it. Edit the field and click <em>Reload ↺</em> to re-tokenise
+            if the NP in your data contains an error. The context sentence is never affected by edits.
           </div>
-          <div class="doc-step">
-            <div class="doc-step-num">3</div>
-            <div class="doc-step-body">
-              <div class="doc-step-title">Select token(s) and apply a tag</div>
-              <div class="doc-step-desc">Click one or more word chips in the <strong>Tag selection</strong> panel. Chips turn amber when selected. Then choose a main category, then a sub-tag. The chip turns green and shows the assigned tag below it.</div>
-            </div>
+        </li>
+        <li>
+          <span class="step-num-badge">3</span>
+          <div class="step-body">
+            <strong>Tag selection</strong> — click tokens in the phrase stage to select them (one or more),
+            then navigate the three-step tag picker: Category → Subcategory → Type.
+            Previously tagged token sequences show an amber suggestion banner.
           </div>
-          <div class="doc-step">
-            <div class="doc-step-num">4</div>
-            <div class="doc-step-body">
-              <div class="doc-step-title">Set ordering (multi-token spans)</div>
-              <div class="doc-step-desc">When two or more tokens share the same tag, an <strong>Ordering</strong> strip appears. Drag or click to set which token is Head (H), Dependent (D), or Modifier (M).</div>
-            </div>
+        </li>
+        <li>
+          <span class="step-num-badge">4</span>
+          <div class="step-body">
+            <strong>Gloss</strong> — one input per token for word-by-word glossing, plus grammatical chips
+            (PL, SG, GEN, POSS, LOC, REL…) that append to whichever field is focused.
+            A phrase translation field at the bottom captures the full English rendering.
           </div>
-          <div class="doc-step">
-            <div class="doc-step-num">5</div>
-            <div class="doc-step-body">
-              <div class="doc-step-title">Add glosses</div>
-              <div class="doc-step-desc">Fill in an English gloss for each token in the <strong>Gloss</strong> panel. Glosses are required before saving (missing ones turn red). You can also add a phrase-level translation at the bottom of the panel.</div>
-            </div>
-          </div>
-          <div class="doc-step">
-            <div class="doc-step-num">6</div>
-            <div class="doc-step-body">
-              <div class="doc-step-title">Save the phrase</div>
-              <div class="doc-step-desc">Click <strong>Save phrase →</strong> at the bottom. A validation banner highlights any missing glosses or untagged tokens. On success, the row is marked done and the next row loads automatically.</div>
-            </div>
-          </div>
+        </li>
+      </ol>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠</span>
+        <div class="callout-body">
+          <strong>All fields must be complete before saving.</strong>
+          Every token must be tagged, every token must have a gloss, and a phrase translation is required.
+          Incomplete tokens are highlighted in red when you try to save.
         </div>
-      </div>
-      <div class="callout callout-note">
-        <span class="callout-icon">⚠️</span>
-        <span><strong>Auto-tag:</strong> If a token has been seen and tagged before (via the Lexicon), a suggested tag appears in an amber banner. You can accept it with one click or ignore it and pick manually.</span>
       </div>
     </section>
 
-    <!-- ── Tags ── -->
+    <hr class="divider">
+
+    <!-- ── Tag selection ── -->
     <section class="doc-section" id="tags">
-      <div class="doc-section-title">Tag selection</div>
-      <p class="doc-section-intro">
-        Tags are organised in a two-level hierarchy: <strong>main categories</strong> and <strong>sub-tags</strong>. You always pick a main category first, then a sub-tag.
+      <h2 class="section-title">Tag selection</h2>
+      <p>
+        Tags are organised into a three-level hierarchy. Clicking a token (or multiple tokens) opens
+        Step 1 of the picker. Each step narrows the choice:
       </p>
-      <div class="doc-grid-2">
-        <div class="doc-block">
-          <div class="doc-block-header">
-            <div class="doc-block-icon" style="background:var(--accent-light);color:var(--accent)">1</div>
-            <span class="doc-block-title">Main category</span>
-          </div>
-          <div class="doc-block-body">
-            <p>Broad linguistic categories such as <em>Determiner</em>, <em>Noun</em>, or <em>Adjective</em>. Defined in the Categories tab. Click a category button to drill down.</p>
-          </div>
-        </div>
-        <div class="doc-block">
-          <div class="doc-block-header">
-            <div class="doc-block-icon" style="background:var(--amber-light);color:var(--amber)">2</div>
-            <span class="doc-block-title">Sub-tag</span>
-          </div>
-          <div class="doc-block-body">
-            <p>Fine-grained labels within the main category (e.g. <em>DEF</em>, <em>INDEF</em>, <em>POSS</em>). Suggested sub-tags based on prior lexicon entries are highlighted in amber.</p>
-          </div>
-        </div>
+
+      <ol class="step-list">
+        <li><span class="step-num-badge">1</span><div class="step-body"><strong>Category</strong> — the broad grammatical class (Noun, Adjective, Article, Possessive…)</div></li>
+        <li><span class="step-num-badge">2</span><div class="step-body"><strong>Subcategory</strong> — the subdivision within the category (e.g. Animate / Inanimate for Noun; Intersective / Non-intersective for Adjective)</div></li>
+        <li><span class="step-num-badge">3</span><div class="step-body"><strong>Type</strong> — the specific type within the subcategory (e.g. Shape, Color, Material for Intersective; Object, Event for Inanimate). Steps without types apply immediately at Step 2.</div></li>
+      </ol>
+
+      <h3 class="subsection-title">Default tag hierarchy</h3>
+      <div class="tag-tree">
+
+        <div class="tag-tree-row"><span class="tag-tree-dot"></span><span class="badge badge-tag">NOUN</span> Noun</div>
+        <div class="tag-tree-row tag-tree-indent"><span class="tag-tree-dot"></span> Animate <span class="badge badge-tag">NOUN-ANIM</span></div>
+        <div class="tag-tree-row tag-tree-indent"><span class="tag-tree-dot"></span> Inanimate <span class="badge badge-tag">NOUN-INANIM</span></div>
+        <div class="tag-tree-row tag-tree-indent-2"><span class="tag-tree-dot"></span> Object <span class="badge badge-tag">NOUN-INANIM-OBJ</span></div>
+        <div class="tag-tree-row tag-tree-indent-2"><span class="tag-tree-dot"></span> Event <span class="badge badge-tag">NOUN-INANIM-EVT</span></div>
+
+        <div class="tag-tree-row" style="margin-top:.4rem"><span class="tag-tree-dot"></span><span class="badge badge-tag">ADJ</span> Adjective</div>
+        <div class="tag-tree-row tag-tree-indent"><span class="tag-tree-dot"></span> Intersective <span class="badge badge-tag">ADJ-INT</span></div>
+        <div class="tag-tree-row tag-tree-indent-2"><span class="tag-tree-dot"></span> Shape · Color · Material</div>
+        <div class="tag-tree-row tag-tree-indent"><span class="tag-tree-dot"></span> Non-intersective <span class="badge badge-tag">ADJ-NINT</span></div>
+        <div class="tag-tree-row tag-tree-indent-2"><span class="tag-tree-dot"></span> Size · Age · Qualifier</div>
+
+        <div class="tag-tree-row" style="margin-top:.4rem"><span class="tag-tree-dot"></span><span class="badge badge-tag">ART</span> Article — Definite · Indefinite</div>
+        <div class="tag-tree-row"><span class="tag-tree-dot"></span><span class="badge badge-tag">POSS</span> Possessive — Genitive · PP-Genitive</div>
+        <div class="tag-tree-row"><span class="tag-tree-dot"></span><span class="badge badge-tag">NUM</span> Numeral — Ordinal · Cardinal</div>
+        <div class="tag-tree-row"><span class="tag-tree-dot"></span><span class="badge badge-tag">DEM</span> Demonstrative — Proximal · Distal</div>
+        <div class="tag-tree-row"><span class="tag-tree-dot"></span><span class="badge badge-tag">QUANT</span> Quantifier — Existential · Universal</div>
+        <div class="tag-tree-row"><span class="tag-tree-dot"></span><span class="badge badge-tag">RC</span> Relative Clause — Restrictive · Non-restrictive</div>
+        <div class="tag-tree-row"><span class="tag-tree-dot"></span><span class="badge badge-tag">PP</span> Prepositional Phrase</div>
       </div>
-      <div class="doc-block">
-        <div class="doc-block-header">
-          <div class="doc-block-icon" style="background:var(--purple-light);color:var(--purple)">S</div>
-          <span class="doc-block-title">Sense disambiguation</span>
-        </div>
-        <div class="doc-block-body">
-          <p>If a token already exists in the Lexicon with multiple senses (S1, S2…), a sense picker modal opens automatically. Choose the matching sense or create a new one. A small amber dot on the chip indicates the token has a sense assigned.</p>
-        </div>
-      </div>
+
+      <h3 class="subsection-title">Tag suggestions</h3>
+      <p>
+        When you select a sequence of tokens that has been tagged before in the current session,
+        an amber banner appears with the previous tag(s). For a single suggestion, one
+        <em>Confirm</em> button applies it instantly. For multiple suggestions, each is shown
+        on its own row with an individual <em>✓ Confirm</em> button — pick the right one or
+        dismiss the banner and tag manually.
+      </p>
+      <p>
+        Suggestions are based on <strong>exact phrase match</strong> from previously saved annotations.
+        Selecting <em>en</em> alone will not inherit a suggestion from a phrase <em>en iyi</em> — both
+        tokens must be selected together.
+      </p>
+
+      <h3 class="subsection-title">Custom categories</h3>
+      <p>
+        The <strong>Categories</strong> tab lets you add, rename, and delete categories, subcategories, and types.
+        Changes take effect immediately in the tag picker. The <em>✎ Edit categories</em> link at the top of
+        the Tag selection card is a shortcut to that tab.
+      </p>
     </section>
 
-    <!-- ── Gloss ── -->
+    <hr class="divider">
+
+    <!-- ── Gloss panel ── -->
     <section class="doc-section" id="gloss">
-      <div class="doc-section-title">Gloss panel</div>
-      <div class="doc-block">
-        <div class="doc-block-body">
-          <p>The <strong>Gloss</strong> panel (rightmost column) shows one input per token plus a phrase-level translation field at the bottom. Glosses are English translations of each word form and are stored in the Lexicon for reuse.</p>
-          <p>A grammatical gloss palette is provided inside each token row. Click any abbreviation chip (e.g. <code>SG</code>, <code>PL</code>, <code>GEN</code>) to append it to the gloss, following Leipzig Glossing Rules conventions.</p>
-          <p>If a token was glossed in a previous phrase, its prior gloss is pre-filled and a suggestion hint is shown in small text. You can accept or overwrite it.</p>
-        </div>
+      <h2 class="section-title">Gloss panel</h2>
+      <p>
+        The Gloss card sits to the right of the Tag selection card. It contains one input field per token
+        for word-by-word glossing, a palette of preset grammatical chips, and a phrase translation field.
+      </p>
+
+      <h3 class="subsection-title">Grammatical gloss chips</h3>
+      <p>
+        Chips append a grammatical abbreviation to whichever gloss input is currently focused —
+        click a field first, then click a chip. The result is dot-notation: <code>cat.PL.POSS</code>.
+      </p>
+      <div class="gram-chips-preview">
+        <span class="gram-chip-doc">PL</span>
+        <span class="gram-chip-doc">SG</span>
+        <span class="gram-chip-doc">FEM</span>
+        <span class="gram-chip-doc">MASC</span>
+        <span class="gram-chip-doc">NEUT</span>
+        <span class="gram-chip-doc">1SG</span>
+        <span class="gram-chip-doc">2SG</span>
+        <span class="gram-chip-doc">3SG</span>
+        <span class="gram-chip-doc">1PL</span>
+        <span class="gram-chip-doc">2PL</span>
+        <span class="gram-chip-doc">3PL</span>
+        <span class="gram-chip-doc">GEN</span>
+        <span class="gram-chip-doc">POSS</span>
+        <span class="gram-chip-doc">LOC</span>
+        <span class="gram-chip-doc">REL</span>
       </div>
-      <div class="callout callout-warn">
-        <span class="callout-icon">🚫</span>
-        <span>Saving is blocked if any token gloss is empty. All gloss fields must be filled in before clicking <strong>Save phrase →</strong>.</span>
+
+      <p>
+        You can also type freely into any gloss field — the chips are shortcuts, not restrictions.
+        A Turkish example:
+      </p>
+      <div class="code-block">
+Phrase:  benim   kırmızı   kedilerim
+Gloss:   1SG.GEN   red     cat.PL.POSS
+Translation: my red cats
       </div>
+
+      <h3 class="subsection-title">Gloss suggestions</h3>
+      <p>
+        If a token has been glossed before in the current session, its gloss is pre-filled from the
+        <strong>Lexicon</strong>. When a word has multiple senses (different glosses in different contexts),
+        the field shows the first recorded sense — edit it freely. The Lexicon tab shows all senses for
+        every word and lets you edit them inline.
+      </p>
+
+      <h3 class="subsection-title">Phrase translation</h3>
+      <p>
+        The <em>Translation</em> field at the bottom of the Gloss card captures the full English
+        rendering of the entire noun phrase (e.g. <em>my red cats</em>). It is required before saving.
+      </p>
     </section>
 
-    <!-- ── Data ── -->
-    <section class="doc-section" id="data">
-      <div class="doc-section-title">Data tab</div>
-      <div class="doc-block">
-        <div class="doc-block-body">
-          <p>The <strong>Data</strong> tab is a running table of every saved annotation. Each row shows the noun phrase, context, assigned tags, glosses, dataset code, and source name.</p>
-          <p>Use the export buttons at the top right to download your data. You can also <strong>Clear all</strong> to wipe saved annotations (a confirmation prompt will appear).</p>
-          <p>The annotation count is shown above the table and updates in real time as you save phrases.</p>
-        </div>
-      </div>
+    <hr class="divider">
+
+    <!-- ── Saving ── -->
+    <section class="doc-section" id="saving">
+      <h2 class="section-title">Saving a phrase</h2>
+      <p>
+        Click <strong>Save phrase →</strong> (the primary button below the Tag and Gloss cards) to commit
+        a phrase to the session. The tool validates all three requirements before saving:
+      </p>
+      <ol class="step-list">
+        <li><span class="step-num-badge">✓</span><div class="step-body"><strong>All tokens tagged</strong> — every token chip must show a tag label and a green border. Untagged tokens pulse red.</div></li>
+        <li><span class="step-num-badge">✓</span><div class="step-body"><strong>All tokens glossed</strong> — every gloss input must be non-empty. Empty fields are highlighted in red.</div></li>
+        <li><span class="step-num-badge">✓</span><div class="step-body"><strong>Phrase translation provided</strong> — the translation field at the bottom of the Gloss card must be filled.</div></li>
+      </ol>
+      <p>
+        After saving, the row in the Rows list is marked <em>done</em>, the phrase workspace resets,
+        and the progress bar advances. The saved phrase immediately appears in the <strong>Data</strong> tab.
+      </p>
     </section>
+
+    <hr class="divider">
+
+    <!-- ── Data tab ── -->
+    <section class="doc-section" id="data-tab">
+      <h2 class="section-title">Data tab</h2>
+      <p>
+        The Data tab shows all saved phrases in the current session. Each entry displays the phrase ID,
+        the phrase text, language and code chips, the context sentence, phrase translation, and the full
+        ordered tag sequence.
+      </p>
+      <p>
+        Individual entries can be removed with the <em>Remove</em> button. <em>Clear all</em> wipes
+        the entire session's annotations (with confirmation). Exports are available at the top of the tab.
+      </p>
+    </section>
+
+    <hr class="divider">
 
     <!-- ── Lexicon ── -->
     <section class="doc-section" id="lexicon">
-      <div class="doc-section-title">Lexicon tab</div>
-      <p class="doc-section-intro">
-        The Lexicon is a cumulative dictionary of every token that has been glossed. It grows automatically as you annotate and can be exported and re-imported across sessions.
+      <h2 class="section-title">Lexicon</h2>
+      <p>
+        The Lexicon tab maintains a persistent vocabulary of every word form encountered during annotation.
+        Each entry has a unique code (<code>LEX-0001</code>, <code>LEX-0002</code>…) keyed by
+        word form and language. Words can have multiple <strong>senses</strong> (e.g. <em>akıllı</em>
+        → "smart" in one context, "clever" in another), each with its own gloss and list of phrase IDs
+        where that sense was used.
       </p>
-      <div class="doc-block">
-        <div class="doc-block-body">
-          <p>Each lexicon entry records: <strong>Code</strong> (tag assigned), <strong>Word form</strong>, <strong>Language</strong>, <strong>Gloss (EN)</strong>, and the number of phrases in which the token has appeared.</p>
-          <p>A word can have multiple <em>senses</em> (S1, S2…) — for example, the same Turkish suffix can carry different meanings depending on context. Each sense gets its own gloss and tag.</p>
-          <p>Use the <strong>search bar</strong> to filter by word form, tag code, or gloss. A warning banner appears if any entry has an empty gloss, because exporting is blocked until all glosses are filled.</p>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠</span>
+        <div class="callout-body">
+          <strong>Empty glosses block export.</strong>
+          If any lexicon entry has an empty gloss, the export buttons are disabled and a warning
+          badge appears in the toolbar. Fill in all glosses before exporting.
         </div>
       </div>
-      <div class="doc-block">
-        <div class="doc-block-header">
-          <div class="doc-block-icon" style="background:var(--teal-light);color:var(--teal)">↕</div>
-          <span class="doc-block-title">Cross-session reuse</span>
-        </div>
-        <div class="doc-block-body">
-          <p>Export the Lexicon as JSON, then import it at the start of your next session (Step 1 of setup). All prior glosses will be restored and the auto-tag system will use them immediately.</p>
-        </div>
-      </div>
+
+      <p>
+        The Lexicon can be exported separately as <strong>JSON</strong>, <strong>CSV</strong>, or
+        <strong>XLSX</strong> from the Lexicon tab. Exporting the lexicon JSON and re-importing it
+        in a future session carries over all codes and glosses, so the same word always receives
+        the same <code>LEX-XXXX</code> code across datasets.
+      </p>
     </section>
+
+    <hr class="divider">
 
     <!-- ── Categories ── -->
     <section class="doc-section" id="categories">
-      <div class="doc-section-title">Categories tab</div>
-      <div class="doc-block">
-        <div class="doc-block-body">
-          <p>The <strong>Categories</strong> tab is where you manage the tag vocabulary used in the Annotate tab. Changes take effect immediately — you do not need to restart the session.</p>
-          <ul style="margin:.4rem 0 .4rem 1.25rem;line-height:1.8;font-size:14px;color:var(--ink-2)">
-            <li><strong>Main categories</strong> — broad labels (e.g. <em>Determiner</em>). Add new ones with the input at the bottom.</li>
-            <li><strong>Sub-tags</strong> — fine-grained codes within each category. Each sub-tag has a short code and a full label.</li>
-          </ul>
-          <p>You can rename or delete any category or sub-tag. Deleting a sub-tag that has already been applied to saved annotations will not retroactively remove those tags from the Data tab.</p>
-        </div>
-      </div>
-      <div class="callout callout-tip">
-        <span class="callout-icon">💡</span>
-        <span>Click <strong>✎ Edit</strong> in the Tag selection header to jump directly to the Categories tab without leaving the Annotate view.</span>
-      </div>
+      <h2 class="section-title">Categories</h2>
+      <p>
+        The Categories tab lets you customise the full three-level tag hierarchy.
+        All changes apply immediately to the tag picker in the Annotate tab.
+      </p>
+      <ul class="step-list">
+        <li><span class="step-num-badge">+</span><div class="step-body"><strong>Add main category</strong> — type a name in the input at the bottom and click Add. An ID is generated automatically from the name.</div></li>
+        <li><span class="step-num-badge">+</span><div class="step-body"><strong>Add subcategory</strong> — click <em>+ Subcategory</em> next to any category and enter a name. The ID is prefixed with the parent's ID.</div></li>
+        <li><span class="step-num-badge">+</span><div class="step-body"><strong>Add type</strong> — click <em>+ Type</em> next to any subcategory. Types are the third and final level.</div></li>
+        <li><span class="step-num-badge">×</span><div class="step-body"><strong>Delete</strong> — any level can be deleted with the × button. Existing annotations that used a deleted tag are not affected.</div></li>
+      </ul>
     </section>
+
+    <hr class="divider">
 
     <!-- ── Auto-save ── -->
     <section class="doc-section" id="autosave">
-      <div class="doc-section-title">Auto-save</div>
-      <div class="doc-block">
-        <div class="doc-block-body">
-          <p>NP Annotator automatically saves your full session state to your browser's local storage whenever you save a phrase. A status bar below the header shows the time of the last auto-save and the total number of saved annotations.</p>
-          <p>When you return to the page with a saved session, a <strong>restore banner</strong> appears offering to resume where you left off. Choose <strong>Resume session</strong> to reload your data, or <strong>Start fresh</strong> to begin a new session without clearing saved annotations.</p>
-          <p>To permanently clear all saved data from the browser, click <strong>🗑 Clear saved data</strong> in the auto-save bar.</p>
+      <h2 class="section-title">Auto-save</h2>
+      <p>
+        NP Annotator automatically saves the full session state to <code>localStorage</code> after every
+        state-changing action: saving a phrase, deleting an annotation, editing the lexicon, or modifying
+        categories. No manual save step is required.
+      </p>
+      <p>
+        The auto-save bar below the header shows a green status dot, the timestamp of the last save,
+        and counts of saved phrases and lexicon entries. The dot briefly flashes amber when a save
+        is in progress.
+      </p>
+      <h3 class="subsection-title">Resuming a session</h3>
+      <p>
+        On the next page load, if saved data is found, a blue banner appears at the top of the setup screen:
+        <em>"Saved session found — N phrases annotated."</em> Click <strong>Resume session</strong> to
+        restore everything instantly, or <strong>Start fresh</strong> to begin a new session
+        (the old data remains in storage until cleared).
+      </p>
+      <h3 class="subsection-title">Clearing saved data</h3>
+      <div class="callout warn">
+        <span class="callout-icon">⚠</span>
+        <div class="callout-body">
+          <strong>Export before clearing.</strong>
+          The 🗑 <em>Clear saved data</em> button in the auto-save bar permanently deletes all session data
+          from <code>localStorage</code>. This cannot be undone. Always export your annotations first.
         </div>
       </div>
-      <div class="callout callout-warn">
-        <span class="callout-icon">🚫</span>
-        <span>Auto-save uses browser local storage — clearing your browser data or using private/incognito mode will erase saved sessions. Export your data regularly as a backup.</span>
-      </div>
+      <p>
+        Storage limits vary by browser but are typically 5–10 MB per origin.
+        Sessions with thousands of rows and hundreds of annotations stay well within this limit.
+      </p>
     </section>
+
+    <hr class="divider">
 
     <!-- ── Export ── -->
     <section class="doc-section" id="export">
-      <div class="doc-section-title">Exporting data</div>
-      <p class="doc-section-intro">
-        All export actions are available in the Data and Lexicon tabs. Exports are generated in-browser and downloaded directly — no server involved.
+      <h2 class="section-title">Export formats</h2>
+      <p>
+        Exports are available from the <strong>Data</strong> tab (annotations) and the
+        <strong>Lexicon</strong> tab (vocabulary). All exports use UTF-8 with a BOM so files
+        open correctly in Excel with non-Latin scripts.
       </p>
-      <div class="doc-block">
-        <div class="doc-block-header">
-          <div class="doc-block-icon" style="background:var(--green-light);color:var(--green)">📊</div>
-          <span class="doc-block-title">Annotation exports (Data tab)</span>
+
+      <div class="export-cards">
+        <div class="export-card">
+          <div class="export-card-format">.xlsx (annotations)</div>
+          <div class="export-card-desc">Three sheets: <em>phrases</em>, <em>tokens</em>, <em>annotations</em>. Includes a <code>type</code> column. Column widths auto-sized.</div>
         </div>
-        <div class="doc-block-body">
-          <div class="export-grid">
-            <div class="export-card"><div class="export-card-name">XLSX</div><div class="export-card-desc">Excel spreadsheet. Best for sharing with collaborators or importing into statistical tools.</div></div>
-            <div class="export-card"><div class="export-card-name">CSV</div><div class="export-card-desc">Comma-separated values. Compatible with R, Python (pandas), and most corpus tools.</div></div>
-            <div class="export-card"><div class="export-card-name">JSON</div><div class="export-card-desc">Structured data with full tag and gloss detail. Useful for programmatic processing.</div></div>
-          </div>
+        <div class="export-card">
+          <div class="export-card-format">.csv (annotations)</div>
+          <div class="export-card-desc">Three normalised files: <code>np_phrases_*.csv</code>, <code>np_tokens_*.csv</code>, <code>np_annotations_*.csv</code>. Primary/foreign key relationships for direct DB import.</div>
         </div>
-      </div>
-      <div class="doc-block">
-        <div class="doc-block-header">
-          <div class="doc-block-icon" style="background:var(--teal-light);color:var(--teal)">📚</div>
-          <span class="doc-block-title">Lexicon exports (Lexicon tab)</span>
+        <div class="export-card">
+          <div class="export-card-format">.json (annotations)</div>
+          <div class="export-card-desc">A single structured object with <code>session</code>, <code>phrases</code>, <code>tokens</code>, and <code>annotations</code> arrays.</div>
         </div>
-        <div class="doc-block-body">
-          <div class="export-grid">
-            <div class="export-card"><div class="export-card-name">XLSX</div><div class="export-card-desc">Lexicon as a spreadsheet — useful for manual editing or sharing.</div></div>
-            <div class="export-card"><div class="export-card-name">CSV</div><div class="export-card-desc">Flat table of all word forms, codes, and glosses.</div></div>
-            <div class="export-card"><div class="export-card-name">JSON ✶</div><div class="export-card-desc">Re-importable format. Use this to carry your lexicon into future sessions.</div></div>
-          </div>
-          <p style="font-size:12px;color:var(--ink-3);margin-top:.75rem;font-style:italic">✶ JSON is the only lexicon format that can be re-imported.</p>
+        <div class="export-card">
+          <div class="export-card-format">.xlsx / .csv / .json (lexicon)</div>
+          <div class="export-card-desc">Exported from the Lexicon tab. Re-import lexicon JSON in a future session to carry forward <code>LEX-XXXX</code> codes and glosses.</div>
         </div>
       </div>
-      <div class="callout callout-warn">
-        <span class="callout-icon">🚫</span>
-        <span>Lexicon export is blocked if any entry has an empty gloss. Fill in all missing glosses (highlighted in the Lexicon tab) before exporting.</span>
+
+      <h3 class="subsection-title">Database normalisation (CSV)</h3>
+      <p>The three CSV files form a relational schema:</p>
+      <div class="code-block">
+phrases.csv  →  phrase_id  (Primary Key)
+tokens.csv   →  tokenId, phraseId  (FK → phrases.phrase_id)
+annotations.csv → annotation_id, phrase_id  (FK → phrases.phrase_id)
       </div>
     </section>
 
+    <hr class="divider">
+
     <!-- ── Tips ── -->
     <section class="doc-section" id="tips">
-      <div class="doc-section-title">Tips &amp; shortcuts</div>
-      <div class="doc-block">
-        <div class="doc-block-header">
-          <div class="doc-block-icon" style="background:var(--amber-light);color:var(--amber)">⚡</div>
-          <span class="doc-block-title">Productivity tips</span>
+      <h2 class="section-title">Tips &amp; shortcuts</h2>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <strong>Select multiple tokens</strong>
+          Click non-adjacent tokens to build a multi-token selection (e.g. <em>kapıyı açan</em> as one RC unit). All selected tokens receive the same tag.
         </div>
-        <div class="doc-block-body" style="padding:0">
-          <table class="doc-table">
-            <tbody>
-              <tr><td>Auto-tag suggestions</td><td>If a token was tagged before, an amber banner shows the suggested tag. Accept it with one click to skip the two-step picker.</td></tr>
-              <tr><td>Lexicon-assisted glosses</td><td>Gloss inputs are pre-filled from the Lexicon. If the pre-filled value is correct, just press <kbd>Tab</kbd> to move on.</td></tr>
-              <tr><td>Editing the NP</td><td>Use the editable NP field to correct typos or tokenisation issues before tagging. Click <kbd>↺</kbd> to re-tokenise without losing context.</td></tr>
-              <tr><td>Multi-token tagging</td><td>Click multiple chips before selecting a tag to assign the same tag to all of them at once. The ordering strip will appear for disambiguation.</td></tr>
-              <tr><td>Jump to Categories</td><td>Click <strong>✎ Edit</strong> in the Tag selection card header to open the Categories tab directly.</td></tr>
-              <tr><td>Progress bar</td><td>The bar below the row list shows what fraction of rows are marked done.</td></tr>
-              <tr><td>Back up regularly</td><td>Export JSON from both the Data and Lexicon tabs at the end of each session.</td></tr>
-            </tbody>
-          </table>
+        <div class="tip-card">
+          <strong>Fix NP errors inline</strong>
+          If the noun phrase in your data is wrong, edit it in the NP field and click Reload. The context sentence is never changed.
         </div>
-      </div>
-      <div class="doc-block" style="margin-top:.75rem">
-        <div class="doc-block-header">
-          <div class="doc-block-icon" style="background:var(--paper-2);color:var(--ink-3)">⌨</div>
-          <span class="doc-block-title">Keyboard navigation</span>
+        <div class="tip-card">
+          <strong>Use gram chips efficiently</strong>
+          Click a gloss field to focus it, then click chips in sequence. <kbd>Tab</kbd> moves to the next token's field.
         </div>
-        <div class="doc-block-body" style="padding:0">
-          <table class="doc-table">
-            <thead><tr><th>Key</th><th>Action</th></tr></thead>
-            <tbody>
-              <tr><td><kbd>Tab</kbd></td><td>Move between gloss inputs in the Gloss panel.</td></tr>
-              <tr><td><kbd>Enter</kbd></td><td>Confirm modal dialogs (e.g. sense picker).</td></tr>
-              <tr><td><kbd>Esc</kbd></td><td>Close the sense picker modal without saving.</td></tr>
-            </tbody>
-          </table>
+        <div class="tip-card">
+          <strong>Reuse the lexicon across sessions</strong>
+          Export Lexicon JSON after finishing a dataset. Re-import it at the start of the next session to keep <code>LEX-XXXX</code> codes consistent.
+        </div>
+        <div class="tip-card">
+          <strong>Always export before clearing</strong>
+          The Clear saved data button is permanent. Download your XLSX or JSON from the Data tab first.
+        </div>
+        <div class="tip-card">
+          <strong>Back to main via logo</strong>
+          Click <em>NP Annotator</em> in the top-left to return to the setup screen at any time. A Resume button appears immediately.
         </div>
       </div>
+
+      <h3 class="subsection-title">Interaction reference</h3>
+      <table class="shortcut-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>How</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Select a token</td><td>Click the token chip in the phrase stage</td></tr>
+          <tr><td>Select multiple tokens</td><td>Click each token individually (no modifier key needed)</td></tr>
+          <tr><td>Deselect a token</td><td>Click the selected token again</td></tr>
+          <tr><td>Clear all selections</td><td><em>Clear selection</em> button in the Noun Phrase card header</td></tr>
+          <tr><td>Reset entire phrase</td><td><em>Reset</em> button — clears tokens and all annotations</td></tr>
+          <tr><td>Apply tag (no types)</td><td>Category → Subcategory — applies immediately</td></tr>
+          <tr><td>Apply tag (with types)</td><td>Category → Subcategory → Type</td></tr>
+          <tr><td>Navigate back in picker</td><td>← Back link at the top of Step 2 or Step 3</td></tr>
+          <tr><td>Confirm suggestion</td><td><em>Confirm</em> button in the amber banner</td></tr>
+          <tr><td>Dismiss suggestion</td><td><em>Change</em> or <em>Dismiss</em> button in the banner</td></tr>
+          <tr><td>Append grammatical gloss</td><td>Focus a gloss field, then click a teal chip</td></tr>
+          <tr><td>Save phrase</td><td><em>Save phrase →</em> button (all validation must pass)</td></tr>
+          <tr><td>Edit categories</td><td><em>✎ Edit categories</em> link in Tag selection card header</td></tr>
+        </tbody>
+      </table>
     </section>
 
   </main>
 </div>
 
+<!-- ══ FOOTER ══ -->
 <footer style="text-align:center; padding:1.5rem 2rem; border-top:var(--border); font-size:12px; color:var(--ink-4); background:white; margin-top:2rem; display:flex; flex-direction:column; align-items:center; gap:8px;">
   
   <div style="display:flex; align-items:center; gap:12px;">
@@ -505,8 +680,11 @@
       LinkedIn
     </a>
   </div>
-    <div style="opacity:0.8;">NP Annotator</div>
+
+  <div style="opacity:0.8;">NP Annotator</div>
 </footer>
-<script src="script.js"></script>
+
+<script src="docs.js"></script>
+
 </body>
 </html>
