@@ -171,11 +171,18 @@
     <div class="step-body">
       <div class="col-map-grid">
         <!-- Context: REQUIRED -->
-        <div>
-          <div class="map-badge" style="color:var(--purple)"><span class="badge-dot" style="background:var(--purple)"></span> Context column <span class="required-star">*</span></div>
-          <select id="sel-context" onchange="onColMapChange()"><option value="">— select —</option></select>
-          <div class="field-hint">Column containing the full source sentence.</div>
-        </div>
+<div>
+  <label for="sel-context" class="map-badge" style="color:var(--purple)">
+    <span class="badge-dot" style="background:var(--purple)"></span>
+    Context column <span class="required-star">*</span>
+  </label>
+
+  <select id="sel-context" onchange="onColMapChange()">
+    <option value="">— select —</option>
+  </select>
+
+  <div class="field-hint">Column containing the full source sentence.</div>
+</div>
         <!-- Data: REQUIRED -->
         <div>
           <div class="map-badge" style="color:var(--accent)"><span class="badge-dot" style="background:var(--accent)"></span> Data column <span class="required-star">*</span></div>
