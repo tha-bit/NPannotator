@@ -6,12 +6,14 @@
 <title>NP Annotator</title>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-
 </head>
 <body>
 
 <header>
   <div class="logo" onclick="goHome()" style="cursor:pointer" title="Go to main page"><span class="logo-dot"></span> NP Annotator</div>
+
+
+
   <div class="session-strip" id="session-strip">
     <div class="session-chip"><span class="lbl">lang&nbsp;</span><span class="val" id="sh-lang"></span></div>
     <div class="session-chip"><span class="lbl">code&nbsp;</span><span class="val" id="sh-code"></span></div>
@@ -25,13 +27,12 @@
     <button class="nb"        id="nav-categories" onclick="switchTab('categories')" disabled>Categories</button>
   </nav>
 
-       <a href="docs.html" class="docs-link" target="_blank" rel="noopener" title="Open documentation">
+    <a href="/doc/docs.html" class="docs-link" target="_blank" rel="noopener" title="Open documentation">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
       <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
     </svg>
     Documentation
   </a>
-
   
 </header>
 
@@ -75,23 +76,25 @@
   <!-- Step 1: Upload or resume -->
   <div class="step-card" id="sc-1">
     <div class="step-header"><div class="step-num" id="sn-1">1</div><span class="step-title">Upload data file</span><span class="step-subtitle">CSV or Excel · UTF-8</span></div>
-    <div class="step-body">
-    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+    <div class="step-body" style="display:flex;flex-direction:column;gap:1rem">
+      <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4M12 4v12"/></svg>
         <p><strong>Click to upload</strong> — .csv · .xlsx · .xls</p>
       </div>
-        <div id="file-note" class="note note-success"></div>
-        <div id="header-toggle-wrap" style="display:none;margin-top:.4rem;display:none;align-items:center;gap:.5rem;font-size:13px;color:var(--ink-3)">
-          <input type="checkbox" id="has-header-cb" onchange="toggleHeaderRow()" style="width:auto;cursor:pointer">
-          <span>First row treated as header</span>
-
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFile(event)">
+      <div id="file-note" style="display:none;padding:9px 14px;border-radius:var(--radius);background:var(--green-light);color:var(--green);font-size:13px;font-weight:500"></div>
+      <div id="header-toggle-wrap" style="display:none;margin-top:.4rem;display:none;align-items:center;gap:.5rem;font-size:13px;color:var(--ink-3)">
+        <input type="checkbox" id="has-header-cb" onchange="toggleHeaderRow()" style="width:auto;cursor:pointer">
+        <span>First row treated as header</span>
       </div>
 
       <!-- Sample Data subsection -->
       <div class="sample-data-section">
         <div class="section-label">Sample data</div>
         <p class="sample-data-intro">
-          Don't have your own data yet? Download one of the example files below to explore how the annotator works.</p>
+          Don't have your own data yet? Download one of the example files below to explore how the annotator works.
+          Each file is pre-structured with the required columns (Context, Data, and Data Code).
+        </p>
         <div class="sample-file-list">
 
           <div class="sample-file-item">
@@ -103,9 +106,9 @@
             </div>
             <div class="sample-file-info">
               <span class="sample-file-name">sample_english_nps.csv</span>
-              <span class="sample-file-desc">English noun phrases</span>
+              <span class="sample-file-desc">English noun phrases — definite/indefinite articles, adjectives, relative clauses</span>
             </div>
-            <a href="Sample/sample_english_nps.csv" class="btn btn-sm sample-download-btn" download title="Download English sample">
+            <a href="" class="btn btn-sm sample-download-btn" download title="Download English sample">
               ↓ Download
             </a>
           </div>
@@ -119,9 +122,9 @@
             </div>
             <div class="sample-file-info">
               <span class="sample-file-name">sample_turkish_nps.csv</span>
-              <span class="sample-file-desc">Turkish noun phrases</span>
+              <span class="sample-file-desc">Turkish noun phrases — possessives, case markers, complex NPs (UTF-8 encoded)</span>
             </div>
-            <a href="Sample/sample_turkish_nps.csv" class="btn btn-sm sample-download-btn" download title="Download Turkish sample">
+            <a href="" class="btn btn-sm sample-download-btn" download title="Download Turkish sample">
               ↓ Download
             </a>
           </div>
@@ -134,10 +137,10 @@
               </svg>
             </div>
             <div class="sample-file-info">
-              <span class="sample-file-name">sample_spanish_nps.csv</span>
-              <span class="sample-file-desc">Spanish noun phrases</span>
+              <span class="sample-file-name">sample_multilingual_nps.csv</span>
+              <span class="sample-file-desc">Mixed-language dataset — English, German, and French examples in one file</span>
             </div>
-            <a href="Sample/sample_spanish_nps.csv" class="btn btn-sm sample-download-btn" download title="Download Spanish sample">
+            <a href="" class="btn btn-sm sample-download-btn" download title="Download multilingual sample">
               ↓ Download
             </a>
           </div>
@@ -385,7 +388,7 @@
 </div>
 
 </main>
-
+<!-- ══ FOOTER ══ -->
 <footer style="text-align:center; padding:1.5rem 2rem; border-top:var(--border); font-size:12px; color:var(--ink-4); background:white; margin-top:2rem; display:flex; flex-direction:column; align-items:center; gap:8px;">
   
   <div style="display:flex; align-items:center; gap:12px;">
@@ -408,8 +411,6 @@
 
   <div style="opacity:0.8;">NP Annotator</div>
 </footer>
-
-
 <script src="script.js"></script>
 
 </body>
