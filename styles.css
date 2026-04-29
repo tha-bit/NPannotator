@@ -487,24 +487,24 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 @font-face {
   font-family: 'Source Sans 3';
-  src: url('/fonts/SourceSans3-Light.woff2') format('woff2');
+  src: url('fonts/SourceSans3-Light.woff2') format('woff2');
   font-weight: 300;
 }
 
 @font-face {
   font-family: 'Source Sans 3';
-  src: url('/fonts/SourceSans3-Regular.woff2') format('woff2');
+  src: url('fonts/SourceSans3-Regular.woff2') format('woff2');
   font-weight: 400;
 }
 
 @font-face {
   font-family: 'Source Sans 3';
-  src: url('/fonts/SourceSans3-Medium.woff2') format('woff2');
+  src: url('fonts/SourceSans3-Medium.woff2') format('woff2');
   font-weight: 500;
 }
 
 @font-face {
   font-family: 'Source Sans 3';
-  src: url('/fonts/SourceSans3-SemiBold.woff2') format('woff2');
+  src: url('fonts/SourceSans3-SemiBold.woff2') format('woff2');
   font-weight: 600;
 }
