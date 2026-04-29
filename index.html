@@ -14,18 +14,20 @@
 
 
 
-  <div class="session-strip" id="session-strip">
-    <div class="session-chip"><span class="lbl">lang&nbsp;</span><span class="val" id="sh-lang"></span></div>
-    <div class="session-chip"><span class="lbl">code&nbsp;</span><span class="val" id="sh-code"></span></div>
-    <div class="session-chip"><span class="lbl">col&nbsp;</span><span class="val" id="sh-col"></span></div>
-    <button class="btn btn-sm btn-ghost" onclick="resetSession()">↺ New session</button>
-  </div>
+
   <nav>
     <button class="nb active" id="nav-annotate"  onclick="switchTab('annotate')"  disabled>Annotate</button>
     <button class="nb"        id="nav-data"       onclick="switchTab('data')"       disabled>Data</button>
     <button class="nb"        id="nav-lexicon"    onclick="switchTab('lexicon')"    disabled>Lexicon</button>
     <button class="nb"        id="nav-categories" onclick="switchTab('categories')" disabled>Categories</button>
   </nav>
+
+    <div class="session-strip" id="session-strip">
+    <div class="session-chip"><span class="lbl">lang&nbsp;</span><span class="val" id="sh-lang"></span></div>
+    <div class="session-chip"><span class="lbl">code&nbsp;</span><span class="val" id="sh-code"></span></div>
+    <div class="session-chip"><span class="lbl">col&nbsp;</span><span class="val" id="sh-col"></span></div>
+    <button class="btn btn-sm btn-ghost" onclick="resetSession()">↺ New session</button>
+  </div>
 
     <a href="docs.html" class="docs-link" target="_blank" rel="noopener" title="Open documentation">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="15" height="15">
