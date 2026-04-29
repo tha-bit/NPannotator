@@ -13,7 +13,6 @@
   --border:1px solid var(--paper-3);
 }
 body{font-family:'Source Sans 3',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);line-height:1.6;min-height:100vh}
-
 /* ── Header ── */
 header{background:white;border-bottom:var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:200;gap:1rem}
 .logo{font-family:'Libre Baskerville',serif;font-size:17px;color:var(--ink);display:flex;align-items:center;gap:10px;flex-shrink:0}
@@ -28,6 +27,38 @@ nav{display:flex;border:var(--border);border-radius:var(--radius);background:var
 .nb:hover{color:var(--ink);background:var(--paper-3)}
 .nb.active{background:white;color:var(--accent);font-weight:600}
 .nb:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+/* ── Documentation link ── */
+.docs-link{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 13px;
+  border-radius:var(--radius);
+  border:var(--border);
+  background:var(--paper-2);
+  font-family:'Source Sans 3',sans-serif;
+  font-size:13px;
+  font-weight:500;
+  color:var(--ink-2);
+  text-decoration:none;
+  transition:all .15s;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.docs-link:hover{
+  background:var(--accent-light);
+  border-color:var(--accent-mid);
+  color:var(--accent);
+}
+.docs-link svg{
+  flex-shrink:0;
+  opacity:.7;
+  transition:opacity .15s;
+}
+.docs-link:hover svg{
+  opacity:1;
+}
 
 main{width:100%;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1.25rem}
 .tab-panel{display:none;flex-direction:column;gap:1.5rem}
@@ -313,7 +344,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 }
 .as-restore-banner.visible{display:flex}
   .annotate-layout{grid-template-columns:minmax(150px,190px) minmax(160px,200px) minmax(0,1fr) minmax(0,1fr)}
-
+}
 @media(max-width:1000px){
   header{padding:0 1rem}
   main{padding:1rem}
@@ -424,160 +455,4 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   padding:1px 5px;
   border-radius:3px;
   color:var(--accent);
-}
-
-/* ── Documentation link ── */
-.docs-link{
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  padding:5px 13px;
-  border-radius:var(--radius);
-  border:var(--border);
-  background:var(--paper-2);
-  font-family:'Source Sans 3',sans-serif;
-  font-size:13px;
-  font-weight:500;
-  color:var(--ink-2);
-  text-decoration:none;
-  transition:all .15s;
-  white-space:nowrap;
-  flex-shrink:0;
-}
-.docs-link:hover{
-  background:var(--accent-light);
-  border-color:var(--accent-mid);
-  color:var(--accent);
-}
-.docs-link svg{
-  flex-shrink:0;
-  opacity:.7;
-  transition:opacity .15s;
-}
-.docs-link:hover svg{
-  opacity:1;
-}
- 
-main{width:100%;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1.25rem}
-.tab-panel{display:none;flex-direction:column;gap:1.5rem}
-.tab-panel.active{display:flex}
-
-
-/* ══ DOCS PAGE ══ */
-
-/* Allow <a> tags to be styled as nav buttons */
-a.nb{text-decoration:none;display:block}
-
-/* Two-column page layout: sidebar + content */
-.docs-layout{display:grid;grid-template-columns:220px 1fr;gap:2rem;max-width:1040px;margin:2rem auto;padding:0 1.5rem 3rem;align-items:start}
-
-/* Sticky sidebar */
-.docs-sidebar{position:sticky;top:74px;background:white;border:var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:.75rem 0;overflow:hidden}
-.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-4);padding:.4rem 1.1rem .2rem;margin-top:.4rem;display:block}
-.sidebar-label:first-child{margin-top:0}
-.sidebar-link{display:flex;align-items:center;gap:8px;padding:6px 1.1rem;font-size:13px;color:var(--ink-3);text-decoration:none;border-left:2px solid transparent;transition:all .13s}
-.sidebar-link:hover{color:var(--ink);background:var(--paper-2)}
-.sidebar-link.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-light);font-weight:600}
-.sidebar-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--ink-4)}
-.sidebar-link.active .sidebar-dot{background:var(--accent)}
-
-/* Content column */
-.docs-content{display:flex;flex-direction:column;gap:2.5rem;min-width:0}
-
-/* Section headings */
-.doc-section{scroll-margin-top:80px}
-.doc-section-title{font-family:'Libre Baskerville',serif;font-size:20px;font-weight:400;color:var(--ink);margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:var(--border)}
-.doc-section-intro{font-size:15px;color:var(--ink-2);line-height:1.7;margin-bottom:1.25rem}
-
-/* Content blocks */
-.doc-block{background:white;border:var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1rem}
-.doc-block-header{padding:.7rem 1.25rem;border-bottom:var(--border);background:var(--paper-2);display:flex;align-items:center;gap:10px}
-.doc-block-icon{width:28px;height:28px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.doc-block-title{font-family:'Libre Baskerville',serif;font-size:14px;color:var(--ink);font-weight:400}
-.doc-block-body{padding:1rem 1.25rem;font-size:14px;color:var(--ink-2);line-height:1.75}
-.doc-block-body p{margin-bottom:.65rem}
-.doc-block-body p:last-child{margin-bottom:0}
-
-/* Step list */
-.doc-step{display:flex;gap:1rem;padding:.85rem 1.25rem;border-bottom:var(--border)}
-.doc-step:last-child{border-bottom:none}
-.doc-step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:white;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.doc-step-body{flex:1;min-width:0}
-.doc-step-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:.2rem}
-.doc-step-desc{font-size:13px;color:var(--ink-3);line-height:1.6}
-
-/* Tables */
-.doc-table{width:100%;border-collapse:collapse;font-size:13px}
-.doc-table thead th{padding:8px 12px;background:var(--paper-2);border-bottom:var(--border);text-align:left;font-weight:600;color:var(--ink-2);white-space:nowrap}
-.doc-table td{padding:8px 12px;border-bottom:var(--border);color:var(--ink-3);vertical-align:top;line-height:1.5}
-.doc-table tr:last-child td{border-bottom:none}
-.doc-table td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
-
-/* Badges */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-.badge-accent{background:var(--accent-light);color:var(--accent);border:1px solid var(--accent-mid)}
-.badge-green{background:var(--green-light);color:var(--green);border:1px solid var(--green-mid)}
-.badge-amber{background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-mid)}
-.badge-purple{background:var(--purple-light);color:var(--purple);border:1px solid #c4b3e8}
-.badge-teal{background:var(--teal-light);color:var(--teal);border:1px solid var(--teal-mid)}
-.badge-red{background:var(--red-light);color:var(--red);border:1px solid #e8c4c9}
-
-/* Callout boxes */
-.callout{display:flex;gap:.75rem;padding:.85rem 1.1rem;border-radius:var(--radius);font-size:13px;line-height:1.6;margin-top:.75rem}
-.callout-icon{font-size:16px;flex-shrink:0;margin-top:1px}
-.callout-tip{background:var(--accent-light);color:var(--accent);border:1px solid var(--accent-mid)}
-.callout-note{background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-mid)}
-.callout-warn{background:var(--red-light);color:var(--red);border:1px solid #e8c4c9}
-
-/* Inline code & keyboard keys */
-code{font-family:'Source Code Pro',monospace;font-size:12px;background:var(--paper-3);padding:1px 6px;border-radius:4px;color:var(--ink-2)}
-kbd{display:inline-block;padding:2px 8px;border-radius:4px;border:1px solid var(--paper-3);background:white;font-family:'Source Code Pro',monospace;font-size:11px;color:var(--ink-2);box-shadow:0 1px 2px rgba(0,0,0,.08);white-space:nowrap}
-
-/* Two-column content grid */
-.doc-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-
-/* Hero intro card */
-.doc-hero{background:white;border:var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:2rem 2rem 1.75rem;display:flex;gap:1.5rem;align-items:flex-start}
-.doc-hero-text h1{font-family:'Libre Baskerville',serif;font-size:24px;font-weight:400;color:var(--ink);margin-bottom:.4rem;line-height:1.3}
-.doc-hero-text p{font-size:15px;color:var(--ink-3);line-height:1.7}
-.doc-hero-badge-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem}
-
-/* Workflow strip */
-.workflow{display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:.75rem 1.25rem;background:var(--paper-2);border-radius:var(--radius);font-size:13px}
-.workflow-step{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:var(--radius);background:white;border:var(--border);color:var(--ink-2);font-weight:500;white-space:nowrap}
-.workflow-arrow{color:var(--ink-4);font-size:16px;margin:0 4px}
-
-/* Export format grid */
-.export-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
-.export-card{border:var(--border);border-radius:var(--radius);padding:.85rem 1rem;background:var(--paper-2);display:flex;flex-direction:column;gap:.3rem}
-.export-card-name{font-weight:600;font-size:13px;color:var(--ink)}
-.export-card-desc{font-size:12px;color:var(--ink-3);line-height:1.5}
-
-/* Docs responsive */
-@media(max-width:720px){
-  .docs-layout{grid-template-columns:1fr;padding:0 1rem 3rem}
-  .docs-sidebar{position:static}
-  .doc-grid-2{grid-template-columns:1fr}
-  .export-grid{grid-template-columns:1fr 1fr}
-  .workflow{gap:4px}
-}
-
-/* ── Setup Header ── */
-.setup-header {
-  margin-bottom: 1.75rem;
-}
-
-.setup-title {
-  /* Using a fallback in case the web font fails to load */
-  font-family: 'Libre Baskerville', serif; 
-  font-size: 22px;
-  font-weight: 400;
-  margin-bottom: 0.3rem;
-  color: var(--ink); /* Assuming standard ink variable for titles */
-}
-
-.setup-desc {
-  font-size: 14px;
-  color: var(--ink-3);
-  line-height: 1.5;
 }
