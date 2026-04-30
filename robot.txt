@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Explicitly allow main pages
+Allow: /index.html
+Allow: /docs.html
+
+# Block unnecessary or internal paths (optional)
+Disallow: /private/
+Disallow: /session/
+Disallow: /test/
+Disallow: /dev/
+
+# Sitemap location
+Sitemap: https://tha-bit.github.io/NPannotator/sitemap.xml
