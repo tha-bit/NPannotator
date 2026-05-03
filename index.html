@@ -79,15 +79,8 @@
 <!-- ══ SETUP ══ -->
 <div id="setup-screen">
   <div style="margin-bottom:1.75rem">
-    <h1 style="font-size:22px;font-weight:400;margin-bottom:.3rem">Noun Phrase Annotator</h1>
-    <p style="font-size:14px;color:var(--ink-3)">Noun Phrase Annotator is an easy-to-use web tool designed for annotating noun phrases. Upload your dataset, map the relevant columns, and quickly start tagging noun phrases with a structured and consistent workflow. The interface is built to support efficient and reliable annotation for research projects. Once completed, Noun Phrase Annotator allows you to export your results in multiple formats for analysis, reporting, or integration into your pipeline.</p>
-  </div>
-
-
-<div id="setup-screen">
-  <div style="margin-bottom:1.75rem">
-    <h2 style="font-size:22px;font-weight:400;margin-bottom:.3rem">Start Noun Phrase Annotation</h2>
-    <p style="font-size:14px;color:var(--ink-3)">Upload your file, map columns, configure session defaults and start annotating your noun phrases.</p>
+    <h2 style="font-family:'Libre Baskerville',serif;font-size:22px;font-weight:400;margin-bottom:.3rem">New annotation session</h2>
+    <p style="font-size:14px;color:var(--ink-3)">Upload your file, map columns, and configure session defaults.</p>
   </div>
 
   <!-- Step 1: Upload or resume -->
@@ -123,9 +116,9 @@
             </div>
             <div class="sample-file-info">
               <span class="sample-file-name">sample_english_nps.csv</span>
-              <span class="sample-file-desc">English noun phrases — articles, adjectives, relative clauses and more</span>
+              <span class="sample-file-desc">English noun phrases — definite/indefinite articles, adjectives, relative clauses</span>
             </div>
-            <a href="Sample/sample_english_nps.csv" class="btn btn-sm sample-download-btn" download title="Download English sample">
+            <a href="" class="btn btn-sm sample-download-btn" download title="Download English sample">
               ↓ Download
             </a>
           </div>
@@ -139,9 +132,9 @@
             </div>
             <div class="sample-file-info">
               <span class="sample-file-name">sample_turkish_nps.csv</span>
-              <span class="sample-file-desc">Turkish noun phrases — genetives, case markers and more (UTF-8 encoded)</span>
+              <span class="sample-file-desc">Turkish noun phrases — possessives, case markers, complex NPs (UTF-8 encoded)</span>
             </div>
-            <a href="Sample/sample_turkish_nps.csv" class="btn btn-sm sample-download-btn" download title="Download Turkish sample">
+            <a href="" class="btn btn-sm sample-download-btn" download title="Download Turkish sample">
               ↓ Download
             </a>
           </div>
@@ -155,9 +148,9 @@
             </div>
             <div class="sample-file-info">
               <span class="sample-file-name">sample_multilingual_nps.csv</span>
-              <span class="sample-file-desc">Spanish noun phrases - postnominal adjectives, gender markers and more</span>
+              <span class="sample-file-desc">Mixed-language dataset — English, German, and French examples in one file</span>
             </div>
-            <a href="Sample/sample_spanish_nps.csv" class="btn btn-sm sample-download-btn" download title="Download multilingual sample">
+            <a href="" class="btn btn-sm sample-download-btn" download title="Download multilingual sample">
               ↓ Download
             </a>
           </div>
@@ -187,34 +180,26 @@
     <div class="step-body">
       <div class="col-map-grid">
         <!-- Context: REQUIRED -->
+        <div>
+          <div class="map-badge" style="color:var(--purple)"><span class="badge-dot" style="background:var(--purple)"></span> Context column <span class="required-star">*</span></div>
+          <select id="sel-context" onchange="onColMapChange()"><option value="">— select —</option></select>
+          <div class="field-hint">Column containing the full source sentence.</div>
+        </div>
         <!-- Data: REQUIRED -->
         <div>
-          <label for="sel-data" class="map-badge" style="color:var(--accent)">
-            <span class="badge-dot" style="background:var(--accent)"></span>
-            Data column <span class="required-star">*</span>
-          </label>
-          <select id="sel-data" onchange="onColMapChange()">
-            <option value="">— select —</option>
-          </select>
+          <div class="map-badge" style="color:var(--accent)"><span class="badge-dot" style="background:var(--accent)"></span> Data column <span class="required-star">*</span></div>
+          <select id="sel-data" onchange="onColMapChange()"><option value="">— select —</option></select>
           <div class="field-hint">Column containing the noun phrase to annotate.</div>
         </div>
         <!-- Data Code: from column, REQUIRED -->
         <div>
-          <label for="sel-code" class="map-badge" style="color:var(--amber)">
-            <span class="badge-dot" style="background:var(--amber)"></span>
-            Data code column <span class="required-star">*</span>
-          </label>
-          <select id="sel-code" onchange="onColMapChange()">
-            <option value="">— select —</option>
-          </select>
+          <div class="map-badge" style="color:var(--amber)"><span class="badge-dot" style="background:var(--amber)"></span> Data code column <span class="required-star">*</span></div>
+          <select id="sel-code" onchange="onColMapChange()"><option value="">— select —</option></select>
           <div class="field-hint">Column with per-row corpus or data identifier.</div>
         </div>
         <!-- Language: required dropdown -->
         <div>
-          <label for="langSelect" class="map-badge" style="color:var(--green)">
-            <span class="badge-dot" style="background:var(--green)"></span>
-            Language <span class="required-star">*</span>
-          </label>
+          <div class="map-badge" style="color:var(--green)"><span class="badge-dot" style="background:var(--green)"></span> Language <span class="required-star">*</span></div>
           <select id="langSelect" onchange="onLangChange()">
             <option value="">— select —</option>
             <option>Turkish</option><option>English</option><option>German</option><option>French</option>
@@ -227,20 +212,14 @@
           <div class="field-hint">Language of this dataset.</div>
         </div>
         <!-- Source Name: typeable text, REQUIRED -->
-         <div>
-          <label for="sourceNameInput" class="map-badge" style="color:var(--teal)">
-            <span class="badge-dot" style="background:var(--teal)"></span>
-            Source name <span class="required-star">*</span>
-          </label>
+        <div>
+          <div class="map-badge" style="color:var(--teal)"><span class="badge-dot" style="background:var(--teal)"></span> Source name <span class="required-star">*</span></div>
           <input type="text" id="sourceNameInput" placeholder="e.g. BNC Corpus, OPUS-TR" oninput="validateSetup()">
           <div class="field-hint">Name of the source corpus or document collection.</div>
         </div>
         <!-- Dataset code: manual text, REQUIRED -->
         <div>
-          <label for="codeInput" class="map-badge" style="color:var(--red)">
-            <span class="badge-dot" style="background:var(--red)"></span>
-            Dataset code <span class="required-star">*</span>
-          </label>
+          <div class="map-badge" style="color:var(--red)"><span class="badge-dot" style="background:var(--red)"></span> Dataset code <span class="required-star">*</span></div>
           <input type="text" id="codeInput" placeholder="e.g. TR-01, EN-WIKI-A" oninput="validateSetup()">
           <div class="field-hint">Short identifier for this annotation batch.</div>
         </div>
