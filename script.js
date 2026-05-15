@@ -938,23 +938,87 @@ function buildTables(){
   }));
   return{phrases,tokens_tbl,annos_tbl};
 }
-function exportXLSX(){
-  if(!savedAnnotations.length){alert('No annotations saved yet.');return;}
-  const{phrases,tokens_tbl,annos_tbl}=buildTables();
-  const wb=XLSX.utils.book_new();
-  const toSheet=(data,cols)=>{
-    const ws=XLSX.utils.json_to_sheet(data,{header:cols});
-    const mw={};cols.forEach(c=>{mw[c]=c.length;});
-    data.forEach(row=>cols.forEach(c=>{const v=String(row[c]||'');if(v.length>mw[c])mw[c]=Math.min(v.length,60);}));
-    ws['!cols']=cols.map(c=>({wch:mw[c]+2}));return ws;
+function exportXLSX() {
+  if (!savedAnnotations.length) {
+    alert('No annotations saved yet.');
+    return;
+  }
+
+  const { phrases, tokens_tbl, annos_tbl } = buildTables();
+
+  const wb = XLSX.utils.book_new();
+
+  const toSheet = (data, cols) => {
+    const ws = XLSX.utils.json_to_sheet(data, { header: cols });
+
+    const mw = {};
+    cols.forEach(c => {
+      mw[c] = c.length;
+    });
+
+    data.forEach(row => {
+      cols.forEach(c => {
+        const v = String(row[c] ?? '');
+        mw[c] = Math.max(mw[c], Math.min(v.length, 60));
+      });
+    });
+
+    ws['!cols'] = cols.map(c => ({
+      wch: mw[c] + 2
+    }));
+
+    return ws;
   };
-  XLSX.utils.book_append_sheet(wb,toSheet(phrases,
-    ['phrase_id','phrase','phrase_translation','language','code','context','tag_sequence','saved_at']),'phrases');
-  XLSX.utils.book_append_sheet(wb,toSheet(tokens_tbl,
-    ['tokenId','phraseId','position','wordForm','lexId','senseId','gloss']),'tokens');
-  XLSX.utils.book_append_sheet(wb,toSheet(annos_tbl,
-    ['annotation_id','phrase_id','order','tokens','token_ids','tag','category','subcategory','type']),'annotations');
-  XLSX.writeFile(wb,`np_${san(session.code||'annotations')}.xlsx`,{bookType:'xlsx',type:'binary'});
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    toSheet(phrases, [
+      'phrase_id',
+      'phrase',
+      'phrase_translation',
+      'language',
+      'code',
+      'context',
+      'tag_sequence',
+      'saved_at'
+    ]),
+    'phrases'
+  );
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    toSheet(tokens_tbl, [
+      'tokenId',
+      'phraseId',
+      'position',
+      'wordForm',
+      'lexId',
+      'senseId',
+      'gloss'
+    ]),
+    'tokens'
+  );
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    toSheet(annos_tbl, [
+      'annotation_id',
+      'phrase_id',
+      'order',
+      'tokens',
+      'token_ids',
+      'tag',
+      'category',
+      'subcategory',
+      'type'
+    ]),
+    'annotations'
+  );
+
+  const filename = `np_${(session?.code || 'annotations')
+    .replace(/[^\w-]/g, '_')}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
 }
 function exportJSON(){
   const{phrases,tokens_tbl,annos_tbl}=buildTables();
