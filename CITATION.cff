@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: NPannotator
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+authors:
+  - family-names: "Yangın"
+    given-names: "Taha"
+    orcid: "https://orcid.org/0000-0002-3620-2355"
+repository-code: "https://github.com/tha-bit/NPannotator"
+repository: "https://github.com/tha-bit/NPannotator"
+homepage: "https://tha-bit.github.io/NPannotator/"
+url: "https://github.com/tha-bit/NPannotator"
+abstract: "Noun Phrase Annotation Tool"
+keywords:
+  - "annotation"
+  - "noun-phrase"
+  - "tool"
+license: MIT
+version: 1.0.0
+date-released: 2026-04-07
