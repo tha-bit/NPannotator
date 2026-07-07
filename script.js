@@ -66,15 +66,81 @@ let rawContext=''; // stores the original context text, never overwritten by NP 
 ══════════════════════════════════════ */
 const LS_KEY='np_annotator_v1';
 
+function buildSessionSnapshot(){
+  const snap={
+    version:1,
+    ts: Date.now(),
+    session: JSON.parse(JSON.stringify(session||{})),
+    fileHeaders: JSON.parse(JSON.stringify(fileHeaders||[])),
+    fileRows: JSON.parse(JSON.stringify(fileRows||[])),
+    colMap: JSON.parse(JSON.stringify(colMap||{data:-1,lang:-1,code:-1,context:-1,source:-1})),
+    categories: JSON.parse(JSON.stringify(categories||DEFAULT_CATS)),
+    phraseCounter,
+    lexicon: Object.values(lexicon||{}).map(e=>({
+      ...e,
+      senses:(e.senses||[]).map(s=>({...s,phraseIds:(s.phraseIds||[]).slice()}))
+    })),
+    lexCounter,
+    savedAnnotations: JSON.parse(JSON.stringify(savedAnnotations||[])),
+    tagSuggestions: JSON.parse(JSON.stringify(tagSuggestions||{})),
+    currentDraft:{
+      tokens: JSON.parse(JSON.stringify(tokens||[])),
+      selectedIdx: [...(selectedIdx||[])],
+      currentAnnotations: JSON.parse(JSON.stringify(currentAnnotations||[])),
+      currentGlosses: JSON.parse(JSON.stringify(currentGlosses||{})),
+      currentPhraseTranslation: currentPhraseTranslation||'',
+      activeRowIdx,
+      rawContext: rawContext||'',
+      pendingAutoTag: pendingAutoTag ? {indices:[...(pendingAutoTag.indices||[])], tagId:pendingAutoTag.tagId} : null,
+      activeGlossToken: activeGlossToken ?? null
+    }
+  };
+  return snap;
+}
+
+function restoreSessionSnapshot(snap){
+  const data=snap&&typeof snap==='object'?snap:{};
+  if(!data||(!data.fileRows&&!(data.savedAnnotations||[]).length&&!Object.keys(data.lexicon||{}).length&&!data.session)){
+    throw new Error('This file does not contain a valid annotation session.');
+  }
+
+  session          = JSON.parse(JSON.stringify(data.session||{language:'',code:''}));
+  fileHeaders      = Array.isArray(data.fileHeaders)?data.fileHeaders.slice():[];
+  fileRows         = Array.isArray(data.fileRows)?data.fileRows.map(r=>Array.isArray(r)?r.slice():[r]):[];
+  colMap           = Object.assign({data:-1,lang:-1,code:-1,context:-1,source:-1}, data.colMap||{});
+  categories       = data.categories ? JSON.parse(JSON.stringify(data.categories)) : JSON.parse(JSON.stringify(DEFAULT_CATS));
+  phraseCounter    = Number(data.phraseCounter)||0;
+  lexCounter       = Number(data.lexCounter)||0;
+  savedAnnotations = Array.isArray(data.savedAnnotations)?JSON.parse(JSON.stringify(data.savedAnnotations)):[];
+  tagSuggestions   = data.tagSuggestions ? JSON.parse(JSON.stringify(data.tagSuggestions)) : {};
+
+  lexicon={};
+  (Array.isArray(data.lexicon)?data.lexicon:[]).forEach(e=>{
+    if(e.lexId&&e.wordForm){
+      const k=bk(e.wordForm,e.language||'');
+      lexicon[k]={...e,senses:(e.senses||[]).map(s=>({...s,phraseIds:s.phraseIds||[]}))};
+    }
+  });
+
+  const draft=data.currentDraft||{};
+  tokens = Array.isArray(draft.tokens)?JSON.parse(JSON.stringify(draft.tokens)) : [];
+  selectedIdx = new Set(Array.isArray(draft.selectedIdx)?draft.selectedIdx:[]);
+  currentAnnotations = Array.isArray(draft.currentAnnotations)?JSON.parse(JSON.stringify(draft.currentAnnotations)):[];
+  currentGlosses = draft.currentGlosses ? JSON.parse(JSON.stringify(draft.currentGlosses)) : {};
+  currentPhraseTranslation = draft.currentPhraseTranslation||'';
+  activeRowIdx = Number.isInteger(draft.activeRowIdx)?draft.activeRowIdx:-1;
+  rawContext = draft.rawContext||'';
+  pendingAutoTag = draft.pendingAutoTag ? {indices:[...(draft.pendingAutoTag.indices||[])], tagId:draft.pendingAutoTag.tagId} : null;
+  activeGlossToken = draft.activeGlossToken ?? null;
+
+  rebuildTagSuggestions();
+  return {session,fileHeaders,fileRows,colMap,categories,phraseCounter,lexicon,lexCounter,savedAnnotations,tagSuggestions};
+}
+
 function autoSave(){
   if(!fileRows.length) return; // nothing to save before a session is open
   try{
-    const snap={
-      ts: Date.now(),
-      session, fileHeaders, fileRows, colMap, categories,
-      phraseCounter, lexicon: Object.values(lexicon), lexCounter,
-      savedAnnotations, tagSuggestions
-    };
+    const snap=buildSessionSnapshot();
     localStorage.setItem(LS_KEY, JSON.stringify(snap));
     updateAutoSaveBar();
   }catch(e){
@@ -131,24 +197,7 @@ function restoreFromStorage(){
     const raw=localStorage.getItem(LS_KEY);
     if(!raw) return;
     const snap=JSON.parse(raw);
-
-    session          = snap.session          || {language:'',code:''};
-    fileHeaders      = snap.fileHeaders      || [];
-    fileRows         = snap.fileRows         || [];
-    colMap           = snap.colMap           || {data:-1,lang:-1,code:-1,context:-1,source:-1};
-    categories       = snap.categories       || JSON.parse(JSON.stringify(DEFAULT_CATS));
-    phraseCounter    = snap.phraseCounter    || 0;
-    lexCounter       = snap.lexCounter       || 0;
-    savedAnnotations = snap.savedAnnotations || [];
-    tagSuggestions   = snap.tagSuggestions   || {};
-
-    lexicon={};
-    (snap.lexicon||[]).forEach(e=>{
-      if(e.lexId&&e.wordForm){
-        const k=bk(e.wordForm,e.language||'');
-        lexicon[k]={...e,senses:(e.senses||[]).map(s=>({...s,phraseIds:s.phraseIds||[]}))};
-      }
-    });
+    restoreSessionSnapshot(snap);
 
     dismissRestoreBanner();
     _activateSession();
@@ -176,6 +225,20 @@ function _activateSession(){
     document.getElementById('nav-'+id).disabled=false
   );
   renderRowList();
+  renderSaved();
+  renderLexicon();
+  renderCatManager();
+  if(tokens.length){
+    renderPhrase();
+    renderGlossPanel();
+    renderTagOrderStrip();
+    if(selectedIdx.size){renderTagPickerActive();} else {renderTagPickerIdle();}
+  } else {
+    renderPhrase();
+    renderGlossPanel();
+    renderTagOrderStrip();
+    renderTagPickerIdle();
+  }
   switchTab('annotate');
 }
 
@@ -438,7 +501,8 @@ function gv(row,col,fb){if(col>=0&&row[col]!==undefined)return String(row[col]).
 function renderRowList(){
   document.getElementById('row-list').innerHTML=fileRows.map((row,i)=>{
     const ctx=gv(row,colMap.context,'');const done=savedAnnotations.some(a=>a.rowIndex===i);
-    return`<div class="row-item${done?' done':''}" onclick="selectRow(${i})" id="ri-${i}"><span class="row-num">${i+1}</span><span class="row-text">${ctx||'<em style="color:var(--ink-4)">—</em>'}</span>${done?'<span class="done-badge">done</span>':''}</div>`;
+    const active=i===activeRowIdx;
+    return`<div class="row-item${done?' done':''}${active?' active':''}" onclick="selectRow(${i})" id="ri-${i}"><span class="row-num">${i+1}</span><span class="row-text">${ctx||'<em style="color:var(--ink-4)">—</em>'}</span>${done?'<span class="done-badge">done</span>':''}</div>`;
   }).join('');updateProgress();
 }
 function updateProgress(){
@@ -964,6 +1028,43 @@ function exportJSON(){
   };
   dl(new Blob([JSON.stringify(out,null,2)],{type:'application/json;charset=utf-8'}),
      `np_${san(session.code||'annotations')}.json`);
+}
+function exportSessionJSON(){
+  const snap=buildSessionSnapshot();
+  if(!snap.fileRows.length && !snap.savedAnnotations.length && !Object.keys(snap.lexicon||{}).length){
+    alert('No session data available to export yet.');
+    return;
+  }
+  const name=`np_session_${san(session.code||session.language||'session')}_${new Date().toISOString().slice(0,10)}.json`;
+  dl(new Blob([JSON.stringify(snap,null,2)],{type:'application/json;charset=utf-8'}),name);
+}
+function importSessionFile(e){
+  const f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const snap=JSON.parse(ev.target.result);
+      restoreSessionSnapshot(snap);
+      autoSave();
+      if(fileRows.length && session.language){
+        dismissRestoreBanner();
+        _activateSession();
+        document.getElementById('autosave-bar').style.display='flex';
+        updateAutoSaveBar();
+      }
+      const note=document.getElementById('session-import-note')||document.getElementById('setup-session-import-note');
+      if(note){
+        note.style.display='';
+        note.textContent=`✓ Session imported — ${savedAnnotations.length} phrases, ${Object.keys(lexicon).length} lexicon entries`;
+      }
+      alert('Session imported successfully.');
+    }catch(err){
+      alert('Could not import session: '+err.message);
+    }
+  };
+  r.readAsText(f,'UTF-8');
+  e.target.value='';
 }
 function exportCSV(){
   if(!savedAnnotations.length){alert('No annotations saved yet.');return;}

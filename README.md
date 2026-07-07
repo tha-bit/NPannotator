@@ -64,6 +64,7 @@ By default, tags are organized in **three levels**:
 ### 6. **Data Management**
 - **Auto-save** — all work saved to browser local storage automatically
 - **Session restore** — resume interrupted sessions with a single click
+- **Session export/import** — download a complete session snapshot as JSON and import it on another device to continue seamlessly
 - **Clear data** — full control to wipe local storage and start fresh
 - **Progress tracking** — visual indicator of annotated vs. remaining phrases
 
