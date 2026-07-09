@@ -184,6 +184,19 @@
         <input type="file" id="sessionImportInput" accept=".json" style="display:none" onchange="importSessionFile(event)">
         <div id="setup-session-import-note" style="display:none;font-size:12px;color:var(--green);margin-top:.4rem"></div>
       </div>
+
+      <div>
+        <div class="section-label">Optional reference dataset for suggestions</div>
+        <label class="map-badge" style="color:var(--amber); margin-bottom:6px; display:inline-flex; align-items:center; gap:6px;" for="pretrainedDatasetSelect">
+          <span class="badge-dot" style="background:var(--amber)"></span>
+          Pretrained / pretagged dataset
+        </label>
+        <select id="pretrainedDatasetSelect" onchange="onReferenceDatasetChange()" style="width:100%">
+          <option value="">— none —</option>
+        </select>
+        <div class="field-hint">Choose a read-only reference dataset to surface annotation suggestions while you tag. It never becomes part of your exported annotations.</div>
+        <div id="reference-dataset-note" style="display:none;font-size:12px;color:var(--green);margin-top:.4rem"></div>
+      </div>
     </div>
   </div>
 

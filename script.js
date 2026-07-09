@@ -57,7 +57,14 @@ let session={language:'',code:''};
 let phraseCounter=0;
 let lexicon={},lexCounter=0;
 let pendingAutoTag=null;
-/* tagSuggestions: map of joined-token-string -> tagId, built from savedAnnotations */
+let referenceDataset=null;
+let referenceTagSuggestions={};
+const AVAILABLE_REFERENCE_DATASETS=[
+  {id:'english-reference',label:'English reference tags',language:'English',file:'Sample/pretrained/english_reference.csv'},
+  {id:'turkish-reference',label:'Turkish reference tags',language:'Turkish',file:'Sample/pretrained/turkish_reference.csv'},
+  {id:'spanish-reference',label:'Spanish reference tags',language:'Spanish',file:'Sample/pretrained/spanish_reference.csv'}
+];
+/* tagSuggestions: map of joined-token-string -> tagId, built from savedAnnotations and reference datasets */
 let tagSuggestions={};
 let rawContext=''; // stores the original context text, never overwritten by NP edits
 
@@ -67,6 +74,14 @@ let rawContext=''; // stores the original context text, never overwritten by NP 
 const LS_KEY='np_annotator_v1';
 
 function buildSessionSnapshot(){
+  const persistedTagSuggestions={};
+  savedAnnotations.forEach(s=>{
+    s.annotations.forEach(a=>{
+      const key=a.tokens.toLowerCase();
+      if(!persistedTagSuggestions[key]) persistedTagSuggestions[key]=[];
+      if(!persistedTagSuggestions[key].includes(a.tag)) persistedTagSuggestions[key].push(a.tag);
+    });
+  });
   const snap={
     version:1,
     ts: Date.now(),
@@ -82,7 +97,7 @@ function buildSessionSnapshot(){
     })),
     lexCounter,
     savedAnnotations: JSON.parse(JSON.stringify(savedAnnotations||[])),
-    tagSuggestions: JSON.parse(JSON.stringify(tagSuggestions||{})),
+    tagSuggestions: JSON.parse(JSON.stringify(persistedTagSuggestions||{})),
     currentDraft:{
       tokens: JSON.parse(JSON.stringify(tokens||[])),
       selectedIdx: [...(selectedIdx||[])],
@@ -275,16 +290,95 @@ function ensureSense(base,gloss,phraseId){
 }
 
 /* ══ TAG SUGGESTIONS (from Data section) ══ */
+function buildReferenceTagSuggestionsFromRows(rows){
+  const suggestions={};
+  if(!Array.isArray(rows)||!rows.length) return suggestions;
+  const dataRows=rows.filter(r=>Array.isArray(r)&&r.some(c=>String(c).trim()));
+  if(!dataRows.length) return suggestions;
+  const header=dataRows[0].map(h=>String(h).trim().toLowerCase());
+  const phraseIdx=header.findIndex(h=>['phrase','np','data','token','tokens','form','word','text','surface'].includes(h));
+  const tagIdx=header.findIndex(h=>['tag','label','annotation','annotation_tag'].includes(h));
+  const catIdx=header.findIndex(h=>['category','cat'].includes(h));
+  const subIdx=header.findIndex(h=>['subcategory','subcat','sub_category'].includes(h));
+  const typeIdx=header.findIndex(h=>['type','kind'].includes(h));
+  dataRows.slice(1).forEach(row=>{
+    if(!Array.isArray(row)||!row.some(c=>String(c).trim())) return;
+    const phrase=String((phraseIdx>=0?row[phraseIdx]:row[0])||'').trim();
+    const tagValue=String((tagIdx>=0?row[tagIdx]:'')||'').trim();
+    const catValue=String((catIdx>=0?row[catIdx]:'')||'').trim();
+    const subValue=String((subIdx>=0?row[subIdx]:'')||'').trim();
+    const typeValue=String((typeIdx>=0?row[typeIdx]:'')||'').trim();
+    const tagId=tagValue || (catValue&&subValue&&typeValue ? `${catValue}-${subValue}-${typeValue}` : '');
+    if(!phrase||!tagId) return;
+    const key=phrase.toLowerCase().replace(/\s+/g,' ').trim();
+    if(!suggestions[key]) suggestions[key]=[];
+    if(!suggestions[key].includes(tagId)) suggestions[key].push(tagId);
+  });
+  return suggestions;
+}
 function rebuildTagSuggestions(){
   tagSuggestions={};
+  const addSuggestions=(source)=>{
+    Object.entries(source||{}).forEach(([k,v])=>{
+      const values=Array.isArray(v)?v:[v];
+      if(!tagSuggestions[k]) tagSuggestions[k]=[];
+      values.forEach(tag=>{if(tag && !tagSuggestions[k].includes(tag)) tagSuggestions[k].push(tag);});
+    });
+  };
   savedAnnotations.forEach(s=>{
     s.annotations.forEach(a=>{
-      // Key: sorted word forms joined, so order-independent
       const key=a.tokens.toLowerCase();
-      if(!tagSuggestions[key])tagSuggestions[key]=[];
-      if(!tagSuggestions[key].includes(a.tag))tagSuggestions[key].push(a.tag);
+      addSuggestions({[key]:[a.tag]});
     });
   });
+  addSuggestions(referenceTagSuggestions);
+}
+
+function populateReferenceDatasetSelect(){
+  const sel=document.getElementById('pretrainedDatasetSelect');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— none —</option>';
+  AVAILABLE_REFERENCE_DATASETS.forEach(ds=>{
+    const opt=document.createElement('option');
+    opt.value=ds.id;
+    opt.textContent=`${ds.label} (${ds.language})`;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadSelectedReferenceDataset(){
+  const sel=document.getElementById('pretrainedDatasetSelect');
+  const note=document.getElementById('reference-dataset-note');
+  if(!sel||!note) return;
+  const entry=AVAILABLE_REFERENCE_DATASETS.find(d=>d.id===sel.value);
+  if(!entry){
+    referenceDataset=null;
+    referenceTagSuggestions={};
+    rebuildTagSuggestions();
+    note.style.display='none';
+    return;
+  }
+  try{
+    const res=await fetch(entry.file,{cache:'no-store'});
+    if(!res.ok) throw new Error(`Could not load ${entry.file}`);
+    const text=await res.text();
+    const rows=parseCSV(text);
+    referenceDataset={...entry,rows};
+    referenceTagSuggestions=buildReferenceTagSuggestionsFromRows(rows);
+    rebuildTagSuggestions();
+    note.style.display='';
+    note.textContent=`✓ Loaded ${entry.label} as a read-only reference dataset for suggestions.`;
+  }catch(err){
+    referenceDataset=null;
+    referenceTagSuggestions={};
+    rebuildTagSuggestions();
+    note.style.display='';
+    note.textContent=`⚠ ${err.message}`;
+  }
+}
+
+function onReferenceDatasetChange(){
+  loadSelectedReferenceDataset();
 }
 
 function getTagSuggestion(indices){
@@ -448,11 +542,12 @@ function validateSetup(){
   document.getElementById('setup-msg').textContent=ok?'':'Still needed: '+m.join(' · ')+'.';
   if(ok) document.getElementById('sn-2').classList.add('done');
 }
-function startSession(){
+async function startSession(){
   const lv=document.getElementById('langSelect').value;
   session.language=lv==='__other__'?document.getElementById('langCustom').value.trim():lv;
   session.code=document.getElementById('codeInput').value.trim();
   session.sourceName=document.getElementById('sourceNameInput').value.trim();
+  await loadSelectedReferenceDataset();
   _activateSession();
   autoSave();
 }
@@ -1136,4 +1231,5 @@ function addType(ci,si){
 function deleteType(ci,si,ti){categories[ci].subs[si].types.splice(ti,1);autoSave();renderCatManager();}
 
 /* ══ PAGE LOAD ══ */
+populateReferenceDatasetSelect();
 checkStorageOnLoad();

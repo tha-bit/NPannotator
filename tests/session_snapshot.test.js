@@ -59,4 +59,17 @@ assert(restored, 'snapshot should restore');
 assert.strictEqual(restored.session.language, snapshot.session.language);
 assert.strictEqual(restored.fileRows.length, snapshot.fileRows.length);
 assert.strictEqual(restored.savedAnnotations.length, snapshot.savedAnnotations.length);
+
+const referenceRows = [
+  ['token', 'tag'],
+  ['old', 'ADJ-NINT-AGE'],
+  ['red', 'ADJ-INT-COLOR']
+];
+const referenceSuggestions = context.buildReferenceTagSuggestionsFromRows
+  ? context.buildReferenceTagSuggestionsFromRows(referenceRows)
+  : null;
+assert(referenceSuggestions, 'reference suggestions should be built from rows');
+assert.deepStrictEqual(referenceSuggestions.old, ['ADJ-NINT-AGE']);
+assert.deepStrictEqual(referenceSuggestions.red, ['ADJ-INT-COLOR']);
+assert.strictEqual(snapshot.referenceDataset, undefined, 'reference datasets should not be serialized into session snapshots');
 console.log('session snapshot tests passed');
