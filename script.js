@@ -57,7 +57,14 @@ let session={language:'',code:''};
 let phraseCounter=0;
 let lexicon={},lexCounter=0;
 let pendingAutoTag=null;
-/* tagSuggestions: map of joined-token-string -> tagId, built from savedAnnotations */
+let referenceDataset=null;
+let referenceTagSuggestions={};
+const AVAILABLE_REFERENCE_DATASETS=[
+  {id:'english-reference',label:'English reference tags',language:'English',file:'Sample/pretrained/english_reference.csv'},
+  {id:'turkish-reference',label:'Turkish reference tags',language:'Turkish',file:'Sample/pretrained/turkish_reference.csv'},
+  {id:'spanish-reference',label:'Spanish reference tags',language:'Spanish',file:'Sample/pretrained/spanish_reference.csv'}
+];
+/* tagSuggestions: map of joined-token-string -> tagId, built from savedAnnotations and reference datasets */
 let tagSuggestions={};
 let rawContext=''; // stores the original context text, never overwritten by NP edits
 
@@ -66,15 +73,89 @@ let rawContext=''; // stores the original context text, never overwritten by NP 
 ══════════════════════════════════════ */
 const LS_KEY='np_annotator_v1';
 
+function buildSessionSnapshot(){
+  const persistedTagSuggestions={};
+  savedAnnotations.forEach(s=>{
+    s.annotations.forEach(a=>{
+      const key=a.tokens.toLowerCase();
+      if(!persistedTagSuggestions[key]) persistedTagSuggestions[key]=[];
+      if(!persistedTagSuggestions[key].includes(a.tag)) persistedTagSuggestions[key].push(a.tag);
+    });
+  });
+  const snap={
+    version:1,
+    ts: Date.now(),
+    session: JSON.parse(JSON.stringify(session||{})),
+    fileHeaders: JSON.parse(JSON.stringify(fileHeaders||[])),
+    fileRows: JSON.parse(JSON.stringify(fileRows||[])),
+    colMap: JSON.parse(JSON.stringify(colMap||{data:-1,lang:-1,code:-1,context:-1,source:-1})),
+    categories: JSON.parse(JSON.stringify(categories||DEFAULT_CATS)),
+    phraseCounter,
+    lexicon: Object.values(lexicon||{}).map(e=>({
+      ...e,
+      senses:(e.senses||[]).map(s=>({...s,phraseIds:(s.phraseIds||[]).slice()}))
+    })),
+    lexCounter,
+    savedAnnotations: JSON.parse(JSON.stringify(savedAnnotations||[])),
+    tagSuggestions: JSON.parse(JSON.stringify(persistedTagSuggestions||{})),
+    currentDraft:{
+      tokens: JSON.parse(JSON.stringify(tokens||[])),
+      selectedIdx: [...(selectedIdx||[])],
+      currentAnnotations: JSON.parse(JSON.stringify(currentAnnotations||[])),
+      currentGlosses: JSON.parse(JSON.stringify(currentGlosses||{})),
+      currentPhraseTranslation: currentPhraseTranslation||'',
+      activeRowIdx,
+      rawContext: rawContext||'',
+      pendingAutoTag: pendingAutoTag ? {indices:[...(pendingAutoTag.indices||[])], tagId:pendingAutoTag.tagId} : null,
+      activeGlossToken: activeGlossToken ?? null
+    }
+  };
+  return snap;
+}
+
+function restoreSessionSnapshot(snap){
+  const data=snap&&typeof snap==='object'?snap:{};
+  if(!data||(!data.fileRows&&!(data.savedAnnotations||[]).length&&!Object.keys(data.lexicon||{}).length&&!data.session)){
+    throw new Error('This file does not contain a valid annotation session.');
+  }
+
+  session          = JSON.parse(JSON.stringify(data.session||{language:'',code:''}));
+  fileHeaders      = Array.isArray(data.fileHeaders)?data.fileHeaders.slice():[];
+  fileRows         = Array.isArray(data.fileRows)?data.fileRows.map(r=>Array.isArray(r)?r.slice():[r]):[];
+  colMap           = Object.assign({data:-1,lang:-1,code:-1,context:-1,source:-1}, data.colMap||{});
+  categories       = data.categories ? JSON.parse(JSON.stringify(data.categories)) : JSON.parse(JSON.stringify(DEFAULT_CATS));
+  phraseCounter    = Number(data.phraseCounter)||0;
+  lexCounter       = Number(data.lexCounter)||0;
+  savedAnnotations = Array.isArray(data.savedAnnotations)?JSON.parse(JSON.stringify(data.savedAnnotations)):[];
+  tagSuggestions   = data.tagSuggestions ? JSON.parse(JSON.stringify(data.tagSuggestions)) : {};
+
+  lexicon={};
+  (Array.isArray(data.lexicon)?data.lexicon:[]).forEach(e=>{
+    if(e.lexId&&e.wordForm){
+      const k=bk(e.wordForm,e.language||'');
+      lexicon[k]={...e,senses:(e.senses||[]).map(s=>({...s,phraseIds:s.phraseIds||[]}))};
+    }
+  });
+
+  const draft=data.currentDraft||{};
+  tokens = Array.isArray(draft.tokens)?JSON.parse(JSON.stringify(draft.tokens)) : [];
+  selectedIdx = new Set(Array.isArray(draft.selectedIdx)?draft.selectedIdx:[]);
+  currentAnnotations = Array.isArray(draft.currentAnnotations)?JSON.parse(JSON.stringify(draft.currentAnnotations)):[];
+  currentGlosses = draft.currentGlosses ? JSON.parse(JSON.stringify(draft.currentGlosses)) : {};
+  currentPhraseTranslation = draft.currentPhraseTranslation||'';
+  activeRowIdx = Number.isInteger(draft.activeRowIdx)?draft.activeRowIdx:-1;
+  rawContext = draft.rawContext||'';
+  pendingAutoTag = draft.pendingAutoTag ? {indices:[...(draft.pendingAutoTag.indices||[])], tagId:draft.pendingAutoTag.tagId} : null;
+  activeGlossToken = draft.activeGlossToken ?? null;
+
+  rebuildTagSuggestions();
+  return {session,fileHeaders,fileRows,colMap,categories,phraseCounter,lexicon,lexCounter,savedAnnotations,tagSuggestions};
+}
+
 function autoSave(){
   if(!fileRows.length) return; // nothing to save before a session is open
   try{
-    const snap={
-      ts: Date.now(),
-      session, fileHeaders, fileRows, colMap, categories,
-      phraseCounter, lexicon: Object.values(lexicon), lexCounter,
-      savedAnnotations, tagSuggestions
-    };
+    const snap=buildSessionSnapshot();
     localStorage.setItem(LS_KEY, JSON.stringify(snap));
     updateAutoSaveBar();
   }catch(e){
@@ -131,24 +212,7 @@ function restoreFromStorage(){
     const raw=localStorage.getItem(LS_KEY);
     if(!raw) return;
     const snap=JSON.parse(raw);
-
-    session          = snap.session          || {language:'',code:''};
-    fileHeaders      = snap.fileHeaders      || [];
-    fileRows         = snap.fileRows         || [];
-    colMap           = snap.colMap           || {data:-1,lang:-1,code:-1,context:-1,source:-1};
-    categories       = snap.categories       || JSON.parse(JSON.stringify(DEFAULT_CATS));
-    phraseCounter    = snap.phraseCounter    || 0;
-    lexCounter       = snap.lexCounter       || 0;
-    savedAnnotations = snap.savedAnnotations || [];
-    tagSuggestions   = snap.tagSuggestions   || {};
-
-    lexicon={};
-    (snap.lexicon||[]).forEach(e=>{
-      if(e.lexId&&e.wordForm){
-        const k=bk(e.wordForm,e.language||'');
-        lexicon[k]={...e,senses:(e.senses||[]).map(s=>({...s,phraseIds:s.phraseIds||[]}))};
-      }
-    });
+    restoreSessionSnapshot(snap);
 
     dismissRestoreBanner();
     _activateSession();
@@ -176,6 +240,20 @@ function _activateSession(){
     document.getElementById('nav-'+id).disabled=false
   );
   renderRowList();
+  renderSaved();
+  renderLexicon();
+  renderCatManager();
+  if(tokens.length){
+    renderPhrase();
+    renderGlossPanel();
+    renderTagOrderStrip();
+    if(selectedIdx.size){renderTagPickerActive();} else {renderTagPickerIdle();}
+  } else {
+    renderPhrase();
+    renderGlossPanel();
+    renderTagOrderStrip();
+    renderTagPickerIdle();
+  }
   switchTab('annotate');
 }
 
@@ -212,16 +290,95 @@ function ensureSense(base,gloss,phraseId){
 }
 
 /* ══ TAG SUGGESTIONS (from Data section) ══ */
+function buildReferenceTagSuggestionsFromRows(rows){
+  const suggestions={};
+  if(!Array.isArray(rows)||!rows.length) return suggestions;
+  const dataRows=rows.filter(r=>Array.isArray(r)&&r.some(c=>String(c).trim()));
+  if(!dataRows.length) return suggestions;
+  const header=dataRows[0].map(h=>String(h).trim().toLowerCase());
+  const phraseIdx=header.findIndex(h=>['phrase','np','data','token','tokens','form','word','text','surface'].includes(h));
+  const tagIdx=header.findIndex(h=>['tag','label','annotation','annotation_tag'].includes(h));
+  const catIdx=header.findIndex(h=>['category','cat'].includes(h));
+  const subIdx=header.findIndex(h=>['subcategory','subcat','sub_category'].includes(h));
+  const typeIdx=header.findIndex(h=>['type','kind'].includes(h));
+  dataRows.slice(1).forEach(row=>{
+    if(!Array.isArray(row)||!row.some(c=>String(c).trim())) return;
+    const phrase=String((phraseIdx>=0?row[phraseIdx]:row[0])||'').trim();
+    const tagValue=String((tagIdx>=0?row[tagIdx]:'')||'').trim();
+    const catValue=String((catIdx>=0?row[catIdx]:'')||'').trim();
+    const subValue=String((subIdx>=0?row[subIdx]:'')||'').trim();
+    const typeValue=String((typeIdx>=0?row[typeIdx]:'')||'').trim();
+    const tagId=tagValue || (catValue&&subValue&&typeValue ? `${catValue}-${subValue}-${typeValue}` : '');
+    if(!phrase||!tagId) return;
+    const key=phrase.toLowerCase().replace(/\s+/g,' ').trim();
+    if(!suggestions[key]) suggestions[key]=[];
+    if(!suggestions[key].includes(tagId)) suggestions[key].push(tagId);
+  });
+  return suggestions;
+}
 function rebuildTagSuggestions(){
   tagSuggestions={};
+  const addSuggestions=(source)=>{
+    Object.entries(source||{}).forEach(([k,v])=>{
+      const values=Array.isArray(v)?v:[v];
+      if(!tagSuggestions[k]) tagSuggestions[k]=[];
+      values.forEach(tag=>{if(tag && !tagSuggestions[k].includes(tag)) tagSuggestions[k].push(tag);});
+    });
+  };
   savedAnnotations.forEach(s=>{
     s.annotations.forEach(a=>{
-      // Key: sorted word forms joined, so order-independent
       const key=a.tokens.toLowerCase();
-      if(!tagSuggestions[key])tagSuggestions[key]=[];
-      if(!tagSuggestions[key].includes(a.tag))tagSuggestions[key].push(a.tag);
+      addSuggestions({[key]:[a.tag]});
     });
   });
+  addSuggestions(referenceTagSuggestions);
+}
+
+function populateReferenceDatasetSelect(){
+  const sel=document.getElementById('pretrainedDatasetSelect');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— none —</option>';
+  AVAILABLE_REFERENCE_DATASETS.forEach(ds=>{
+    const opt=document.createElement('option');
+    opt.value=ds.id;
+    opt.textContent=`${ds.label} (${ds.language})`;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadSelectedReferenceDataset(){
+  const sel=document.getElementById('pretrainedDatasetSelect');
+  const note=document.getElementById('reference-dataset-note');
+  if(!sel||!note) return;
+  const entry=AVAILABLE_REFERENCE_DATASETS.find(d=>d.id===sel.value);
+  if(!entry){
+    referenceDataset=null;
+    referenceTagSuggestions={};
+    rebuildTagSuggestions();
+    note.style.display='none';
+    return;
+  }
+  try{
+    const res=await fetch(entry.file,{cache:'no-store'});
+    if(!res.ok) throw new Error(`Could not load ${entry.file}`);
+    const text=await res.text();
+    const rows=parseCSV(text);
+    referenceDataset={...entry,rows};
+    referenceTagSuggestions=buildReferenceTagSuggestionsFromRows(rows);
+    rebuildTagSuggestions();
+    note.style.display='';
+    note.textContent=`✓ Loaded ${entry.label} as a read-only reference dataset for suggestions.`;
+  }catch(err){
+    referenceDataset=null;
+    referenceTagSuggestions={};
+    rebuildTagSuggestions();
+    note.style.display='';
+    note.textContent=`⚠ ${err.message}`;
+  }
+}
+
+function onReferenceDatasetChange(){
+  loadSelectedReferenceDataset();
 }
 
 function getTagSuggestion(indices){
@@ -385,11 +542,12 @@ function validateSetup(){
   document.getElementById('setup-msg').textContent=ok?'':'Still needed: '+m.join(' · ')+'.';
   if(ok) document.getElementById('sn-2').classList.add('done');
 }
-function startSession(){
+async function startSession(){
   const lv=document.getElementById('langSelect').value;
   session.language=lv==='__other__'?document.getElementById('langCustom').value.trim():lv;
   session.code=document.getElementById('codeInput').value.trim();
   session.sourceName=document.getElementById('sourceNameInput').value.trim();
+  await loadSelectedReferenceDataset();
   _activateSession();
   autoSave();
 }
@@ -438,7 +596,8 @@ function gv(row,col,fb){if(col>=0&&row[col]!==undefined)return String(row[col]).
 function renderRowList(){
   document.getElementById('row-list').innerHTML=fileRows.map((row,i)=>{
     const ctx=gv(row,colMap.context,'');const done=savedAnnotations.some(a=>a.rowIndex===i);
-    return`<div class="row-item${done?' done':''}" onclick="selectRow(${i})" id="ri-${i}"><span class="row-num">${i+1}</span><span class="row-text">${ctx||'<em style="color:var(--ink-4)">—</em>'}</span>${done?'<span class="done-badge">done</span>':''}</div>`;
+    const active=i===activeRowIdx;
+    return`<div class="row-item${done?' done':''}${active?' active':''}" onclick="selectRow(${i})" id="ri-${i}"><span class="row-num">${i+1}</span><span class="row-text">${ctx||'<em style="color:var(--ink-4)">—</em>'}</span>${done?'<span class="done-badge">done</span>':''}</div>`;
   }).join('');updateProgress();
 }
 function updateProgress(){
@@ -965,6 +1124,43 @@ function exportJSON(){
   dl(new Blob([JSON.stringify(out,null,2)],{type:'application/json;charset=utf-8'}),
      `np_${san(session.code||'annotations')}.json`);
 }
+function exportSessionJSON(){
+  const snap=buildSessionSnapshot();
+  if(!snap.fileRows.length && !snap.savedAnnotations.length && !Object.keys(snap.lexicon||{}).length){
+    alert('No session data available to export yet.');
+    return;
+  }
+  const name=`np_session_${san(session.code||session.language||'session')}_${new Date().toISOString().slice(0,10)}.json`;
+  dl(new Blob([JSON.stringify(snap,null,2)],{type:'application/json;charset=utf-8'}),name);
+}
+function importSessionFile(e){
+  const f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const snap=JSON.parse(ev.target.result);
+      restoreSessionSnapshot(snap);
+      autoSave();
+      if(fileRows.length && session.language){
+        dismissRestoreBanner();
+        _activateSession();
+        document.getElementById('autosave-bar').style.display='flex';
+        updateAutoSaveBar();
+      }
+      const note=document.getElementById('session-import-note')||document.getElementById('setup-session-import-note');
+      if(note){
+        note.style.display='';
+        note.textContent=`✓ Session imported — ${savedAnnotations.length} phrases, ${Object.keys(lexicon).length} lexicon entries`;
+      }
+      alert('Session imported successfully.');
+    }catch(err){
+      alert('Could not import session: '+err.message);
+    }
+  };
+  r.readAsText(f,'UTF-8');
+  e.target.value='';
+}
 function exportCSV(){
   if(!savedAnnotations.length){alert('No annotations saved yet.');return;}
   const{phrases,tokens_tbl,annos_tbl}=buildTables();
@@ -1035,4 +1231,5 @@ function addType(ci,si){
 function deleteType(ci,si,ti){categories[ci].subs[si].types.splice(ti,1);autoSave();renderCatManager();}
 
 /* ══ PAGE LOAD ══ */
+populateReferenceDatasetSelect();
 checkStorageOnLoad();
