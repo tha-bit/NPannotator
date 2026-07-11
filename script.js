@@ -62,7 +62,8 @@ let referenceTagSuggestions={};
 const AVAILABLE_REFERENCE_DATASETS=[
   {id:'english-reference',label:'English reference tags',language:'English',file:'Sample/pretrained/english_reference.csv'},
   {id:'turkish-reference',label:'Turkish reference tags',language:'Turkish',file:'Sample/pretrained/turkish_reference.csv'},
-  {id:'spanish-reference',label:'Spanish reference tags',language:'Spanish',file:'Sample/pretrained/spanish_reference.csv'}
+  {id:'spanish-reference',label:'Spanish reference tags',language:'Spanish',file:'Sample/pretrained/spanish_reference.csv'},
+  {id:'catalan-reference',label:'Catalan reference tags',language:'Catalan',file:'Sample/pretrained/catalan_reference.csv'}
 ];
 /* tagSuggestions: map of joined-token-string -> tagId, built from savedAnnotations and reference datasets */
 let tagSuggestions={};
