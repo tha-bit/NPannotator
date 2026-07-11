@@ -3,7 +3,7 @@ title: NPannotator
 message: "If you use this software, please cite it using the metadata from this file."
 type: software
 authors:
-  - family-names: "Yangın"
+  - family-names: "Yangin"
     given-names: "Taha"
     orcid: "https://orcid.org/0000-0002-3620-2355"
 repository-code: "https://github.com/tha-bit/NPannotator"

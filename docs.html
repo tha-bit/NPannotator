@@ -37,6 +37,7 @@
     <a href="#upload"   class="sidebar-link">Upload a file</a>
     <a href="#columns"  class="sidebar-link">Map columns</a>
     <a href="#session"  class="sidebar-link">Session settings</a>
+    <a href="#pretrained-datasets" class="sidebar-link">Pretrained datasets</a>
 
     <div class="sidebar-heading">Annotation</div>
     <a href="#annotate" class="sidebar-link">Annotate page</a>
@@ -268,6 +269,45 @@ context,np,code
         If you have unsaved annotation progress on the current phrase it will be lost, but all previously
         <em>saved</em> phrases remain intact.
       </p>
+      <p>
+        For continuity across devices or later work, you can also export your session as a JSON file from the
+        <strong>Data</strong> tab. The same file can be re-imported from the upload area on the setup screen to
+        restore annotations, lexicon entries, and current progress.
+      </p>
+    </section>
+
+    <hr class="divider">
+
+    <!-- ── Pretagged datasets ── -->
+    <section class="doc-section" id="pretrained-datasets">
+      <h2 class="section-title">Pretagged datasets</h2>
+      <p>
+        NP Annotator can optionally load a <strong>read-only reference dataset</strong> before you begin annotating.
+        This is useful when you want tag suggestions while you work, without importing a saved session or mixing
+        reference data into your actual annotation output.
+      </p>
+      <p>
+        On the setup screen, you will see a dropdown labeled <em> pretagged dataset</em>.
+        You can leave it on <em>— none —</em> for a normal session, or choose one of the bundled options for different languages such as
+        English, Turkish, Spanish and Catalan. The selected file is used only to surface suggestions during tagging.
+      </p>
+
+      <div class="callout tip">
+        <span class="callout-icon">✦</span>
+        <div class="callout-body">
+          <strong>Reference-only behavior.</strong>
+          These datasets are never merged into the active session, never appear in saved session snapshots,
+          and never change your exported annotations unless you actively accept or edit a suggestion while tagging.
+        </div>
+      </div>
+
+
+      <h3 class="subsection-title">How suggestions work</h3>
+      <p>
+        When a selected token sequence matches a phrase in the reference file, an amber suggestion banner appears.
+        You can confirm it immediately, dismiss it, or tag manually. This makes the feature a lightweight assistive
+        layer rather than a replacement for annotation.
+      </p>
     </section>
 
     <hr class="divider">
@@ -460,6 +500,11 @@ Translation: my red cats
         After saving, the row in the Rows list is marked <em>done</em>, the phrase workspace resets,
         and the progress bar advances. The saved phrase immediately appears in the <strong>Data</strong> tab.
       </p>
+      <p>
+        Saving a phrase also updates the browser-side session state, so the work is preserved even if you leave
+        the page and return later. If you want a portable backup, use the export buttons in the <strong>Data</strong>
+        tab to download annotations as JSON. At homepage, you can import this file later to restore your progress.
+      </p>
     </section>
 
     <hr class="divider">
@@ -475,6 +520,16 @@ Translation: my red cats
       <p>
         Individual entries can be removed with the <em>Remove</em> button. <em>Clear all</em> wipes
         the entire session's annotations (with confirmation). Exports are available at the top of the tab.
+      </p>
+      <p>
+        The <strong>Data</strong> tab supports three export formats for annotations: <strong>CSV</strong>,
+        <strong>XLSX</strong>, and <strong>JSON</strong>. CSV export produces three files for phrases, tokens,
+        and annotations, while JSON exports the full structured session payload. A separate <strong>Export session JSON</strong>
+        option also saves the current browser session state, including your auto-saved progress.
+      </p>
+      <p>
+        To continue later, use <strong>Import session JSON</strong> from the setup screen. This restores saved
+        annotations, lexicon entries, and session progress from a previously exported file.
       </p>
     </section>
 
@@ -505,6 +560,10 @@ Translation: my red cats
         <strong>XLSX</strong> from the Lexicon tab. Exporting the lexicon JSON and re-importing it
         in a future session carries over all codes and glosses, so the same word always receives
         the same <code>LEX-XXXX</code> code across datasets.
+      </p>
+      <p>
+        Lexicon import is available from the setup screen as an optional JSON upload. This is useful when you
+        want to preserve existing glosses and codes from an earlier project without re-entering them manually.
       </p>
     </section>
 
@@ -572,6 +631,11 @@ Translation: my red cats
         <strong>Lexicon</strong> tab (vocabulary). All exports use UTF-8 with a BOM so files
         open correctly in Excel with non-Latin scripts.
       </p>
+      <p>
+        For annotation data, the workflow is: <strong>save phrase</strong> → <strong>export CSV/XLSX/JSON</strong>
+        when you are ready → <strong>import session JSON</strong> later if you need to resume or share progress.
+        This keeps the browser-based workflow flexible while still supporting downstream processing.
+      </p>
 
       <div class="export-cards">
         <div class="export-card">
@@ -592,7 +656,7 @@ Translation: my red cats
         </div>
       </div>
 
-      <h3 class="subsection-title">Database normalisation (CSV)</h3>
+      <h3 class="subsection-title">Dataset normalisation (CSV)</h3>
       <p>The three CSV files form a relational schema:</p>
       <div class="code-block">
 phrases.csv  →  phrase_id  (Primary Key)
