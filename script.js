@@ -298,22 +298,28 @@ function buildReferenceTagSuggestionsFromRows(rows){
   if(!dataRows.length) return suggestions;
   const header=dataRows[0].map(h=>String(h).trim().toLowerCase());
   const phraseIdx=header.findIndex(h=>['phrase','np','data','token','tokens','form','word','text','surface'].includes(h));
+  const wordIdx=header.findIndex(h=>['word','token','form','surface'].includes(h));
   const tagIdx=header.findIndex(h=>['tag','label','annotation','annotation_tag'].includes(h));
   const catIdx=header.findIndex(h=>['category','cat'].includes(h));
   const subIdx=header.findIndex(h=>['subcategory','subcat','sub_category'].includes(h));
   const typeIdx=header.findIndex(h=>['type','kind'].includes(h));
   dataRows.slice(1).forEach(row=>{
     if(!Array.isArray(row)||!row.some(c=>String(c).trim())) return;
-    const phrase=String((phraseIdx>=0?row[phraseIdx]:row[0])||'').trim();
+    const phrase=String((phraseIdx>=0?row[phraseIdx]:wordIdx>=0?row[wordIdx]:row[0])||'').trim();
     const tagValue=String((tagIdx>=0?row[tagIdx]:'')||'').trim();
     const catValue=String((catIdx>=0?row[catIdx]:'')||'').trim();
     const subValue=String((subIdx>=0?row[subIdx]:'')||'').trim();
     const typeValue=String((typeIdx>=0?row[typeIdx]:'')||'').trim();
-    const tagId=tagValue || (catValue&&subValue&&typeValue ? `${catValue}-${subValue}-${typeValue}` : '');
-    if(!phrase||!tagId) return;
+    const entry={
+      tag: tagValue || [catValue, subValue, typeValue].filter(Boolean).join('-') || '',
+      category: catValue || '',
+      subcategory: subValue || '',
+      type: typeValue || ''
+    };
+    if(!phrase||!entry.tag) return;
     const key=phrase.toLowerCase().replace(/\s+/g,' ').trim();
     if(!suggestions[key]) suggestions[key]=[];
-    if(!suggestions[key].includes(tagId)) suggestions[key].push(tagId);
+    if(!suggestions[key].some(s=>s.tag===entry.tag && s.category===entry.category && s.subcategory===entry.subcategory && s.type===entry.type)) suggestions[key].push(entry);
   });
   return suggestions;
 }
@@ -323,13 +329,18 @@ function rebuildTagSuggestions(){
     Object.entries(source||{}).forEach(([k,v])=>{
       const values=Array.isArray(v)?v:[v];
       if(!tagSuggestions[k]) tagSuggestions[k]=[];
-      values.forEach(tag=>{if(tag && !tagSuggestions[k].includes(tag)) tagSuggestions[k].push(tag);});
+      values.forEach(entry=>{
+        const normalized=typeof entry==='string'?{tag:entry,category:'',subcategory:'',type:''}:entry;
+        if(!normalized||!normalized.tag) return;
+        const exists=tagSuggestions[k].some(s=>s.tag===normalized.tag && s.category===normalized.category && s.subcategory===normalized.subcategory && s.type===normalized.type);
+        if(!exists) tagSuggestions[k].push(normalized);
+      });
     });
   };
   savedAnnotations.forEach(s=>{
     s.annotations.forEach(a=>{
       const key=a.tokens.toLowerCase();
-      addSuggestions({[key]:[a.tag]});
+      addSuggestions({[key]:[{tag:a.tag,category:a.category||'',subcategory:a.subcategory||'',type:a.type||''}]});
     });
   });
   addSuggestions(referenceTagSuggestions);
@@ -382,10 +393,48 @@ function onReferenceDatasetChange(){
   loadSelectedReferenceDataset();
 }
 
-function getTagSuggestion(indices){
+function getTagSuggestionEntries(indices){
   if(!indices||!indices.length)return[];
   const words=indices.map(i=>tokens[i].word).join(' ').toLowerCase();
-  return tagSuggestions[words]||[];
+  const values=tagSuggestions[words]||[];
+  return Array.isArray(values)?values.filter(Boolean).map(entry=>typeof entry==='string'?{tag:entry,category:'',subcategory:'',type:''}:entry):[];
+}
+function getTagSuggestion(indices){
+  return getTagSuggestionEntries(indices).map(e=>e.tag).filter(Boolean);
+}
+function getSuggestionCategoryId(entry){
+  if(!entry) return null;
+  const catLabel=String(entry.category||'').trim();
+  const direct=categories.find(c=>c.id===catLabel || c.label.toLowerCase()===catLabel.toLowerCase());
+  if(direct) return direct.id;
+  const tag=String(entry.tag||'').trim();
+  return tag.split('-')[0]||null;
+}
+function getSuggestionSubcategoryId(entry){
+  if(!entry) return null;
+  const catId=getSuggestionCategoryId(entry);
+  const subLabel=String(entry.subcategory||'').trim();
+  const cat=categories.find(c=>c.id===catId);
+  if(cat){
+    const direct=(cat.subs||[]).find(s=>s.id===subLabel || s.label.toLowerCase()===subLabel.toLowerCase());
+    if(direct) return direct.id;
+  }
+  const tag=String(entry.tag||'').trim();
+  const parts=tag.split('-');
+  return parts.slice(0,2).join('-')||null;
+}
+function getSuggestionTypeId(entry){
+  if(!entry) return null;
+  const catId=getSuggestionCategoryId(entry);
+  const subId=getSuggestionSubcategoryId(entry);
+  const sub=categories.find(c=>c.id===catId)?.subs?.find(s=>s.id===subId);
+  const typeLabel=String(entry.type||'').trim();
+  if(sub){
+    const direct=(sub.types||[]).find(t=>t.id===typeLabel || t.label.toLowerCase()===typeLabel.toLowerCase());
+    if(direct) return direct.id;
+  }
+  const tag=String(entry.tag||'').trim();
+  return tag||null;
 }
 
 /* ══ TAG HELPERS ══ */
@@ -787,11 +836,14 @@ function renderTagPickerActive(){
   if(!selectedIdx.size){renderTagPickerIdle();return;}
   tagPickerCat=null;tagPickerSub=null;
   const indices=[...selectedIdx].sort((a,b)=>a-b);
-  const sugs=getTagSuggestion(indices);
-  const sugCatIds=new Set(sugs.map(t=>t.split('-')[0]));
-  let html=`<div class="tag-step-label">Step 1 — Category</div><div class="tag-btn-grid">`;
+  const entries=getTagSuggestionEntries(indices);
+  let html=`<div class="tag-step-label">Step 1 — Category</div>`;
+  if(entries.length){
+    html+=`<div style="font-size:12px;color:var(--amber);margin-bottom:8px">Suggestions available for this phrase — you can still choose any category manually.</div>`;
+  }
+  html+=`<div class="tag-btn-grid">`;
   categories.forEach(cat=>{
-    const isSug=sugCatIds.has(cat.id);
+    const isSug=entries.some(entry=>getSuggestionCategoryId(entry)===cat.id);
     html+=`<button class="tag-main-btn${isSug?' suggested':''}" onclick="selectCat('${cat.id}')">${cat.label}${isSug?' ●':''}</button>`;
   });
   html+=`</div>`;
@@ -803,13 +855,15 @@ function selectCat(catId){
   const cat=categories.find(c=>c.id===catId);if(!cat)return;
   if(!cat.subs||!cat.subs.length){applyTag(cat.id);renderTagPickerIdle();return;}
   const indices=[...selectedIdx].sort((a,b)=>a-b);
-  const sugs=getTagSuggestion(indices);
-  const sugSubIds=new Set(sugs.map(t=>{const p=t.split('-');return p.slice(0,2).join('-');}));
+  const entries=getTagSuggestionEntries(indices);
   let html=`<button class="tag-back-btn" onclick="renderTagPickerActive()">← Back</button>
-    <div class="tag-step-label">Step 2 — Subcategory <em style="font-style:normal;font-weight:400;color:var(--ink-3)">(${cat.label})</em></div>
-    <div class="tag-btn-grid">`;
+    <div class="tag-step-label">Step 2 — Subcategory <em style="font-style:normal;font-weight:400;color:var(--ink-3)">(${cat.label})</em></div>`;
+  if(entries.length){
+    html+=`<div style="font-size:12px;color:var(--amber);margin-bottom:8px">Suggestions are hints only — choose the subcategory that matches your annotation.</div>`;
+  }
+  html+=`<div class="tag-btn-grid">`;
   cat.subs.forEach(sub=>{
-    const isSug=sugSubIds.has(sub.id)||sugs.includes(sub.id);
+    const isSug=entries.some(entry=>getSuggestionSubcategoryId(entry)===sub.id);
     html+=`<button class="tag-main-btn${isSug?' suggested':''}" onclick="selectSub('${catId}','${sub.id}')">${sub.label}${isSug?' ●':''}</button>`;
   });
   html+=`</div>`;
@@ -822,12 +876,15 @@ function selectSub(catId,subId){
   const sub=(cat.subs||[]).find(s=>s.id===subId);if(!sub)return;
   if(!sub.types||!sub.types.length){applyTag(sub.id);renderTagPickerIdle();return;}
   const indices=[...selectedIdx].sort((a,b)=>a-b);
-  const sugs=new Set(getTagSuggestion(indices));
+  const entries=getTagSuggestionEntries(indices);
   let html=`<button class="tag-back-btn" onclick="selectCat('${catId}')">← Back</button>
-    <div class="tag-step-label">Step 3 — Type <em style="font-style:normal;font-weight:400;color:var(--ink-3)">(${sub.label})</em></div>
-    <div class="tag-btn-grid">`;
+    <div class="tag-step-label">Step 3 — Type <em style="font-style:normal;font-weight:400;color:var(--ink-3)">(${sub.label})</em></div>`;
+  if(entries.length){
+    html+=`<div style="font-size:12px;color:var(--amber);margin-bottom:8px">Suggestions are only hints — pick the type that fits your annotation.</div>`;
+  }
+  html+=`<div class="tag-btn-grid">`;
   sub.types.forEach(typ=>{
-    const isSug=sugs.has(typ.id);
+    const isSug=entries.some(entry=>getSuggestionTypeId(entry)===typ.id);
     html+=`<button class="tag-sub-btn${isSug?' suggested':''}" onclick="applyTag('${typ.id}');renderTagPickerIdle()">${typ.label}${isSug?' ●':''}</button>`;
   });
   html+=`</div>`;
@@ -836,34 +893,34 @@ function selectSub(catId,subId){
 
 /* ══ AUTO-TAG (from Data, exact phrase match) ══ */
 function checkAutoTag(){
-  dismissBanner();if(!selectedIdx.size)return;
+  dismissBanner();
+  if(!selectedIdx.size)return;
   const indices=[...selectedIdx].sort((a,b)=>a-b);
-  const sugs=getTagSuggestion(indices);
-  if(!sugs.length)return;
+  const entries=getTagSuggestionEntries(indices);
+  if(!entries.length)return;
   const words=indices.map(i=>tokens[i].word).join(' ');
   const bt=document.getElementById('banner-text');
+  const sugs=entries.map(e=>e.tag).filter(Boolean);
 
   if(sugs.length===1){
-    // Single suggestion — one confirm + change
-    pendingAutoTag={indices,tagId:sugs[0]};
+    pendingAutoTag={indices,tagId:entries[0].tag,metadata:entries[0]};
     bt.innerHTML=`
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="color:var(--amber);font-size:13px">Suggestion:</span>
         <span style="font-size:13px;color:var(--ink)">"<strong>${words}</strong>"</span>
-        <span class="banner-tag">${sugs[0]}</span>
-        <span style="font-size:12px;color:var(--amber)">${tagLabel(sugs[0])}</span>
+        <span class="banner-tag">${entries[0].tag}</span>
+        <span style="font-size:12px;color:var(--amber)">${tagLabel(entries[0].tag)}</span>
         <button class="btn btn-sm btn-amber" style="margin-left:auto" onclick="confirmAutoTag()">Confirm</button>
         <button class="btn btn-sm" onclick="dismissBanner()">Change</button>
       </div>`;
   } else {
-    // Multiple suggestions — stacked rows, each with its own confirm
     pendingAutoTag=null;
-    const rows=sugs.map(t=>`
+    const rows=entries.map((entry)=>`
       <div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(125,78,15,.1)">
-        <span class="banner-tag">${t}</span>
-        <span style="font-size:12px;color:var(--amber)">${tagLabel(t)}</span>
+        <span class="banner-tag">${entry.tag}</span>
+        <span style="font-size:12px;color:var(--amber)">${tagLabel(entry.tag)}</span>
         <button class="btn btn-sm btn-amber" style="padding:2px 10px;font-size:11px;margin-left:auto"
-          onclick="applyTag('${t}');dismissBanner();renderTagPickerIdle()">✓ Confirm</button>
+          onclick='applySuggestedTagEntry(${JSON.stringify(entry).replace(/'/g,"\\'")})'>✓ Confirm</button>
       </div>`).join('');
     bt.innerHTML=`
       <div style="width:100%">
@@ -878,24 +935,30 @@ function checkAutoTag(){
   }
   document.getElementById('autotag-banner').classList.add('visible');
 }
-function confirmAutoTag(){if(!pendingAutoTag)return;applyTag(pendingAutoTag.tagId);dismissBanner();renderTagPickerIdle();}
+function confirmAutoTag(){if(!pendingAutoTag)return;applyTag(pendingAutoTag.tagId,pendingAutoTag.metadata);dismissBanner();renderTagPickerIdle();}
 function dismissBanner(){pendingAutoTag=null;document.getElementById('autotag-banner').classList.remove('visible');}
+function applySuggestedTagEntry(entry){applyTag(entry&&entry.tag?entry.tag:'',entry||null);}
 
 /* ══ TAGGING ══ */
-function applyTag(tagId){
+function applyTag(tagId, metadata=null){
   if(!selectedIdx.size){alert('Select one or more tokens first.');return;}
   dismissBanner();hideValidation();
   const indices=[...selectedIdx].sort((a,b)=>a-b);
   const lang=rowLang();
   const multiSense=indices.filter(i=>{const b=getLexBase(tokens[i].word,lang);return b&&b.senses.length>1;});
-  if(multiSense.length>0)showSenseModal(multiSense[0],tagId,indices);
-  else applyTagInternal(indices,tagId);
+  if(multiSense.length>0)showSenseModal(multiSense[0],tagId,indices,metadata);
+  else applyTagInternal(indices,tagId,metadata);
 }
 
-function applyTagInternal(indices,tagId){
+function applyTagInternal(indices,tagId,metadata=null){
   const words=indices.map(i=>tokens[i].word).join(' ');
+  const resolved = metadata && typeof metadata==='object' ? metadata : {};
+  const fallback = splitTag(tagId||'');
+  const category = (resolved.category!==undefined && resolved.category!==null) ? String(resolved.category).trim() : fallback.category;
+  const subcategory = (resolved.subcategory!==undefined && resolved.subcategory!==null) ? String(resolved.subcategory).trim() : fallback.subcategory;
+  const type = (resolved.type!==undefined && resolved.type!==null) ? String(resolved.type).trim() : fallback.type;
   currentAnnotations=currentAnnotations.filter(a=>!a.indices.some(i=>indices.includes(i)));
-  currentAnnotations.push({indices,words,tag:tagId,order:Math.min(...indices)+1});
+  currentAnnotations.push({indices,words,tag:tagId||resolved.tag||'',category,subcategory,type,order:Math.min(...indices)+1});
   recomputeOrders();
   selectedIdx=new Set();renderPhrase();renderTagOrderStrip();renderTagPickerIdle();
 }
@@ -916,9 +979,9 @@ function renderTagOrderStrip(){
 
 /* ══ SENSE MODAL ══ */
 let modalCtx={tokenIdx:null,tagId:null,indices:null,selectedSense:null};
-function showSenseModal(tokenIdx,tagId,indices){
+function showSenseModal(tokenIdx,tagId,indices,metadata=null){
   const lang=rowLang();const base=getLexBase(tokens[tokenIdx].word,lang);
-  modalCtx={tokenIdx,tagId,indices,selectedSense:null};
+  modalCtx={tokenIdx,tagId,indices,metadata,selectedSense:null};
   document.getElementById('modal-word').textContent=tokens[tokenIdx].word;
   const curGloss=currentGlosses[tokens[tokenIdx].id]||'';
   let html='';
@@ -937,8 +1000,8 @@ function showSenseModal(tokenIdx,tagId,indices){
   document.getElementById('sense-modal').classList.add('visible');
 }
 function selectModalSense(si){document.querySelectorAll('.sense-option').forEach((el,i)=>el.classList.toggle('selected',i===si));const lang=rowLang();const base=getLexBase(tokens[modalCtx.tokenIdx].word,lang);modalCtx.selectedSense=base.senses[si];}
-function selectNewSense(){const g=document.getElementById('modal-new-gloss').value.trim();const lang=rowLang();const base=ensureLexBase(tokens[modalCtx.tokenIdx].word,lang);const n=base.senses.length+1;const ns={senseId:base.lexId+'-S'+n,gloss:g,phraseIds:[]};base.senses.push(ns);modalCtx.selectedSense=ns;currentGlosses[tokens[modalCtx.tokenIdx].id]=g;closeModal();applyTagInternal(modalCtx.indices,modalCtx.tagId);}
-function confirmSense(){if(!modalCtx.selectedSense){alert('Select a sense first.');return;}currentGlosses[tokens[modalCtx.tokenIdx].id]=modalCtx.selectedSense.gloss||'';closeModal();applyTagInternal(modalCtx.indices,modalCtx.tagId);}
+function selectNewSense(){const g=document.getElementById('modal-new-gloss').value.trim();const lang=rowLang();const base=ensureLexBase(tokens[modalCtx.tokenIdx].word,lang);const n=base.senses.length+1;const ns={senseId:base.lexId+'-S'+n,gloss:g,phraseIds:[]};base.senses.push(ns);modalCtx.selectedSense=ns;currentGlosses[tokens[modalCtx.tokenIdx].id]=g;closeModal();applyTagInternal(modalCtx.indices,modalCtx.tagId,modalCtx.metadata);}
+function confirmSense(){if(!modalCtx.selectedSense){alert('Select a sense first.');return;}currentGlosses[tokens[modalCtx.tokenIdx].id]=modalCtx.selectedSense.gloss||'';closeModal();applyTagInternal(modalCtx.indices,modalCtx.tagId,modalCtx.metadata);}
 function closeModal(){document.getElementById('sense-modal').classList.remove('visible');renderGlossPanel();}
 
 /* ══ VALIDATION ══ */
@@ -998,7 +1061,9 @@ function commitPhrase(){
   });
   const sorted=[...currentAnnotations].sort((a,b)=>a.order-b.order);
   const annotations=sorted.map((a,ai)=>{
-    const{category,subcategory,type}=splitTag(a.tag);
+    const category=(a.category!==undefined&&a.category!==null)?String(a.category).trim():'';
+    const subcategory=(a.subcategory!==undefined&&a.subcategory!==null)?String(a.subcategory).trim():'';
+    const type=(a.type!==undefined&&a.type!==null)?String(a.type).trim():'';
     return{annotationId:phraseId+'-A'+(ai+1),phraseId,order:a.order,tokens:a.words,
            tokenIds:a.indices.map(i=>phraseId+'-T'+(i+1)),tag:a.tag,category,subcategory,type};
   });
@@ -1089,7 +1154,9 @@ function buildTables(){
   savedAnnotations.forEach(s=>s.tokenRecords.forEach(t=>tokens_tbl.push(t)));
   const annos_tbl=[];
   savedAnnotations.forEach(s=>s.annotations.forEach(a=>{
-    const{category,subcategory,type}=splitTag(a.tag);
+    const category=(a.category!==undefined&&a.category!==null)?String(a.category).trim():'';
+    const subcategory=(a.subcategory!==undefined&&a.subcategory!==null)?String(a.subcategory).trim():'';
+    const type=(a.type!==undefined&&a.type!==null)?String(a.type).trim():'';
     annos_tbl.push({
       annotation_id:a.annotationId,phrase_id:a.phraseId,order:a.order,
       tokens:a.tokens,token_ids:a.tokenIds.join(', '),

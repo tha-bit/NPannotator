@@ -61,15 +61,25 @@ assert.strictEqual(restored.fileRows.length, snapshot.fileRows.length);
 assert.strictEqual(restored.savedAnnotations.length, snapshot.savedAnnotations.length);
 
 const referenceRows = [
-  ['token', 'tag'],
-  ['old', 'ADJ-NINT-AGE'],
-  ['red', 'ADJ-INT-COLOR']
+  ['word', 'tag', 'category', 'subcategory', 'type'],
+  ['old', 'ADJ-NINT-AGE', 'Adjective', 'Non-intersective', 'Age'],
+  ['red', 'ADJ-INT-COLOR', 'Adjective', 'Intersective', 'Color']
 ];
 const referenceSuggestions = context.buildReferenceTagSuggestionsFromRows
   ? context.buildReferenceTagSuggestionsFromRows(referenceRows)
   : null;
 assert(referenceSuggestions, 'reference suggestions should be built from rows');
-assert.deepStrictEqual(referenceSuggestions.old, ['ADJ-NINT-AGE']);
-assert.deepStrictEqual(referenceSuggestions.red, ['ADJ-INT-COLOR']);
+assert.deepStrictEqual(referenceSuggestions.old[0], {
+  tag: 'ADJ-NINT-AGE',
+  category: 'Adjective',
+  subcategory: 'Non-intersective',
+  type: 'Age'
+});
+assert.deepStrictEqual(referenceSuggestions.red[0], {
+  tag: 'ADJ-INT-COLOR',
+  category: 'Adjective',
+  subcategory: 'Intersective',
+  type: 'Color'
+});
 assert.strictEqual(snapshot.referenceDataset, undefined, 'reference datasets should not be serialized into session snapshots');
 console.log('session snapshot tests passed');
