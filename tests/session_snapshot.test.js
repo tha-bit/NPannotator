@@ -82,4 +82,26 @@ assert.deepStrictEqual(referenceSuggestions.red[0], {
   type: 'Color'
 });
 assert.strictEqual(snapshot.referenceDataset, undefined, 'reference datasets should not be serialized into session snapshots');
+
+vm.runInContext(`
+  activeRowIdx = 0;
+  fileRows = [['Context','NP','Code']];
+  colMap = {data:1,lang:-1,code:2,context:0,source:-1};
+  session = {language:'English',code:'EN-01',sourceName:'Test source'};
+  tokens = [{id:0,word:'red'}];
+  currentAnnotations = [{indices:[0],words:'red',tag:'ADJ-INT-COLOR',category:'Adjective',subcategory:'Intersective',type:'Color',order:1}];
+  currentGlosses = {0:'red'};
+  currentPhraseTranslation = 'red';
+  savedAnnotations = [{phraseId:'PH-00001',phrase:'red',language:'English',code:'EN-01',source:'Test source',dataColumn:'Context',context:'The red book',phraseTranslation:'rojo',rowIndex:0,tagSequence:['ADJ-INT-COLOR'],tokenRecords:[],annotations:[],savedAt:'old'}];
+  phraseCounter = 1;
+`, context);
+vm.runInContext('commitPhrase();', context);
+const updatedCount = vm.runInContext('savedAnnotations.length', context);
+const updatedPhraseId = vm.runInContext('savedAnnotations[0].phraseId', context);
+const updatedPhrase = vm.runInContext('savedAnnotations[0].phrase', context);
+const updatedPhraseCounter = vm.runInContext('phraseCounter', context);
+assert.strictEqual(updatedCount, 1, 'saving an edited row should update the existing entry instead of creating a new one');
+assert.strictEqual(updatedPhraseId, 'PH-00001', 'edited rows should keep the original phrase id');
+assert.strictEqual(updatedPhrase, 'red', 'edited rows should update the existing saved phrase payload');
+assert.strictEqual(updatedPhraseCounter, 1, 'editing an existing row should not increment the phrase counter');
 console.log('session snapshot tests passed');

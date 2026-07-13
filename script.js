@@ -284,8 +284,10 @@ function ensureLexBase(w,l){
   return lexicon[k];
 }
 function ensureSense(base,gloss,phraseId){
-  let s=base.senses.find(x=>x.gloss===gloss);
+  let s=base.senses.find(x=>x.phraseIds.includes(phraseId));
+  if(!s) s=base.senses.find(x=>x.gloss===gloss);
   if(!s){const n=base.senses.length+1;s={senseId:base.lexId+'-S'+n,gloss:gloss||'',phraseIds:[]};base.senses.push(s);}
+  if(gloss!==undefined&&gloss!==null) s.gloss=String(gloss).trim();
   if(phraseId&&!s.phraseIds.includes(phraseId))s.phraseIds.push(phraseId);
   return s;
 }
@@ -1043,8 +1045,8 @@ function commitPhrase(){
   const errors=validatePhrase();if(errors.length){showValidation(errors);return;}
   hideValidation();
 
-  phraseCounter++;
-  const phraseId='PH-'+String(phraseCounter).padStart(5,'0');
+  const existingIndex=activeRowIdx>=0 ? savedAnnotations.findIndex(s=>s.rowIndex===activeRowIdx) : -1;
+  const phraseId = existingIndex>=0 ? savedAnnotations[existingIndex].phraseId : (()=>{phraseCounter++; return 'PH-'+String(phraseCounter).padStart(5,'0');})();
   const row=activeRowIdx>=0?fileRows[activeRowIdx]:null;
   const language=session.language;
   const code=row?gv(row,colMap.code,session.code):session.code;
@@ -1068,7 +1070,9 @@ function commitPhrase(){
            tokenIds:a.indices.map(i=>phraseId+'-T'+(i+1)),tag:a.tag,category,subcategory,type};
   });
 
-  savedAnnotations.push({phraseId,phrase,language,code,source,dataColumn:colMap.context>=0?fileHeaders[colMap.context]:'',context,phraseTranslation:currentPhraseTranslation,rowIndex:activeRowIdx,tagSequence:sorted.map(a=>a.tag),tokenRecords,annotations,savedAt:new Date().toISOString()});
+  const payload={phraseId,phrase,language,code,source,dataColumn:colMap.context>=0?fileHeaders[colMap.context]:'',context,phraseTranslation:currentPhraseTranslation,rowIndex:activeRowIdx,tagSequence:sorted.map(a=>a.tag),tokenRecords,annotations,savedAt:new Date().toISOString()};
+  if(existingIndex>=0) savedAnnotations[existingIndex]=payload;
+  else savedAnnotations.push(payload);
   rebuildTagSuggestions();
   autoSave();
 
