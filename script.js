@@ -786,12 +786,65 @@ function renderPhrase(){
 }
 
 /* Grammatical gloss feature sets */
-const GRAM_GLOSSES=[
+const DEFAULT_GRAM_GLOSSES=[
   {group:'Number', items:['PL','SG']},
   {group:'Gender',    items:['FEM','MASC','NEUT']},
   {group:'Person',    items:['1SG','2SG','3SG','1PL','2PL','3PL']},
   {group:'Case',      items:['GEN','POSS','LOC','REL']}
 ];
+const GRAM_GLOSS_STORAGE_KEY='np_annotator_gram_glosses_v1';
+let customGramGlossGroups=loadCustomGramGlossGroups();
+
+function loadCustomGramGlossGroups(){
+  try{
+    const raw=localStorage.getItem(GRAM_GLOSS_STORAGE_KEY);
+    if(!raw) return [{group:'Other', items:[]}];
+    const parsed=JSON.parse(raw);
+    if(Array.isArray(parsed)) return parsed.filter(g=>g&&g.group).length ? parsed.filter(g=>g&&g.group) : [{group:'Other', items:[]}];
+  }catch(e){
+    console.warn('Could not load custom gloss groups:', e);
+  }
+  return [{group:'Other', items:[]}];
+}
+function saveCustomGramGlossGroups(){
+  try{ localStorage.setItem(GRAM_GLOSS_STORAGE_KEY, JSON.stringify(customGramGlossGroups)); }catch(e){ console.warn('Could not save custom gloss groups:', e); }
+}
+function getGlossPaletteGroups(){
+  const groups=DEFAULT_GRAM_GLOSSES.map(g=>({group:g.group, items:[...(g.items||[])]}));
+  const other=customGramGlossGroups.find(g=>g.group==='Other');
+  if(other){
+    groups.push({group:'Other', items:[...(other.items||[])]});
+  } else {
+    groups.push({group:'Other', items:[]});
+  }
+  return groups;
+}
+function addCustomGramGlossItem(value){
+  const cleaned=String(value||'').trim().replace(/\s+/g,'');
+  if(!cleaned) return;
+  let other=customGramGlossGroups.find(g=>g.group==='Other');
+  if(!other){other={group:'Other', items:[]}; customGramGlossGroups.push(other);}
+  if(!other.items.some(item=>item.toLowerCase()===cleaned.toLowerCase())){
+    other.items.push(cleaned);
+    saveCustomGramGlossGroups();
+  }
+  renderGlossPanel();
+}
+function removeCustomGramGlossItem(value){
+  const cleaned=String(value||'').trim();
+  if(!cleaned) return;
+  const other=customGramGlossGroups.find(g=>g.group==='Other');
+  if(!other) return;
+  other.items=other.items.filter(item=>item!==cleaned);
+  saveCustomGramGlossGroups();
+  renderGlossPanel();
+}
+function addCustomGlossItemFromInput(){
+  const input=document.getElementById('custom-gram-item-input');
+  if(!input) return;
+  addCustomGramGlossItem(input.value);
+  input.value='';
+}
 
 function appendGramGloss(tid, gram){
   const inp=document.getElementById('gi-'+tid);if(!inp)return;
@@ -806,12 +859,23 @@ function renderGlossPanel(){
   const lang=rowLang();
 
   // Build grammatical chip palette (shared, shown once above token rows)
+  const glossGroups=getGlossPaletteGroups();
   let chipPalette=`<div class="gram-palette">`;
-  GRAM_GLOSSES.forEach(grp=>{
-    chipPalette+=`<div class="gram-group"><span class="gram-group-label">${grp.group}</span>`;
-    grp.items.forEach(item=>{
-      chipPalette+=`<button class="gram-chip" onclick="appendGramGlossActive('${item}')" title="Append .${item} to selected token gloss">${item}</button>`;
-    });
+  glossGroups.forEach(grp=>{
+    chipPalette+=`<div class="gram-group"><span class="gram-group-label">${escHtml(grp.group)}</span>`;
+    if(grp.group==='Other' && !grp.items.length){
+      chipPalette+=`<div style="font-size:11px;color:var(--ink-4);margin-top:4px">No custom glosses yet.</div>`;
+    } else {
+      grp.items.forEach(item=>{
+        const safeItem=String(item).replace(/'/g,"\\'");
+        chipPalette+=`<div style="display:flex;align-items:center;gap:4px">`;
+        chipPalette+=`<button class="gram-chip" onclick="appendGramGlossActive('${safeItem}')" title="Append .${escHtml(item)} to selected token gloss">${escHtml(item)}</button>`;
+        if(grp.group==='Other'){
+          chipPalette+=`<button class="icon-btn" onclick="removeCustomGramGlossItem('${safeItem}')" title="Remove custom gloss">×</button>`;
+        }
+        chipPalette+=`</div>`;
+      });
+    }
     chipPalette+=`</div>`;
   });
   chipPalette+=`</div>`;
@@ -819,6 +883,10 @@ function renderGlossPanel(){
   let html=`<div class="gloss-panel-label">Token glosses</div>
     ${chipPalette}
     <div class="gram-hint">Click a chip to append to the focused gloss field, or type freely.</div>
+    <div style="display:flex;gap:6px;margin:8px 0 10px">
+      <input id="custom-gram-item-input" type="text" placeholder="Add custom gloss item (e.g. ACC)" style="flex:1;min-width:0">
+      <button class="btn btn-sm btn-ghost" onclick="addCustomGlossItemFromInput()">+ Add</button>
+    </div>
     <div class="gloss-tokens">`;
 
   tokens.forEach(t=>{
