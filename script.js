@@ -664,7 +664,8 @@ function selectRow(i){
   const row=fileRows[i];
   const ctx=gv(row,colMap.context,'');
   const np=gv(row,colMap.data,'');
-  loadPhrase(np,ctx);
+  const savedEntry=getSavedEntryForRow(i);
+  loadPhrase(np,ctx,savedEntry);
 }
 
 /* ══ PHRASE ══ */
@@ -686,7 +687,45 @@ function escHtml(t){
   return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function loadPhrase(npText,ctx){
+function getSavedEntryForRow(rowIndex){
+  return savedAnnotations.find(s=>Number(s.rowIndex)===Number(rowIndex))||null;
+}
+function restoreDraftFromSavedEntry(savedEntry){
+  if(!savedEntry){
+    currentAnnotations=[];
+    currentPhraseTranslation='';
+    selectedIdx=new Set();
+    return;
+  }
+
+  currentPhraseTranslation = savedEntry.phraseTranslation || '';
+  (savedEntry.tokenRecords||[]).forEach(tr=>{
+    const tokenIndex = Number(tr.position)-1;
+    if(tokens[tokenIndex] && tr.gloss && String(tr.gloss).trim()) {
+      currentGlosses[tokens[tokenIndex].id] = String(tr.gloss).trim();
+    }
+  });
+
+  currentAnnotations = (savedEntry.annotations||[]).map((a,idx)=>{
+    const words = String(a.tokens||'').split(/\s+/).filter(Boolean);
+    const indices = [];
+    words.forEach(word=>{
+      const tokenIndex = tokens.findIndex((t,pos)=>!indices.includes(pos) && t.word===word);
+      if(tokenIndex>=0) indices.push(tokenIndex);
+    });
+    return {
+      indices,
+      words: a.tokens || '',
+      tag: a.tag || '',
+      category: a.category || '',
+      subcategory: a.subcategory || '',
+      type: a.type || '',
+      order: a.order || idx + 1
+    };
+  });
+  selectedIdx = new Set();
+}
+function loadPhrase(npText,ctx,savedEntry=null){
   // Store raw context — never touch this again
   rawContext=ctx||'';
   const ctxBox=document.getElementById('context-box');
@@ -702,6 +741,8 @@ function loadPhrase(npText,ctx){
   document.getElementById('np-edit-input').value=npText;
   // Tokenise
   tokeniseFromInput(npText);
+  restoreDraftFromSavedEntry(savedEntry);
+  renderPhrase();renderGlossPanel();renderTagOrderStrip();renderTagPickerIdle();updateStatusHint();
 }
 
 function reloadTokens(){
@@ -715,10 +756,11 @@ function reloadTokens(){
 
 function tokeniseFromInput(text){
   tokens=text.split(/\s+/).filter(Boolean).map((w,i)=>({id:i,word:w}));
-  selectedIdx=new Set();currentAnnotations=[];currentGlosses={};currentPhraseTranslation='';
+  selectedIdx=new Set();currentAnnotations=[];currentPhraseTranslation='';
   pendingAutoTag=null;dismissBanner();hideValidation();
   const lang=rowLang();
   // Pre-fill glosses from lexicon
+  currentGlosses={};
   tokens.forEach(t=>{const base=getLexBase(t.word,lang);if(base&&base.senses.length>0)currentGlosses[t.id]=base.senses[0].gloss;});
   renderPhrase();renderGlossPanel();renderTagOrderStrip();renderTagPickerIdle();updateStatusHint();
 }
@@ -745,7 +787,7 @@ function renderPhrase(){
 
 /* Grammatical gloss feature sets */
 const GRAM_GLOSSES=[
-  {group:'Plurality', items:['PL','SG']},
+  {group:'Number', items:['PL','SG']},
   {group:'Gender',    items:['FEM','MASC','NEUT']},
   {group:'Person',    items:['1SG','2SG','3SG','1PL','2PL','3PL']},
   {group:'Case',      items:['GEN','POSS','LOC','REL']}
