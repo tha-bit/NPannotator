@@ -664,7 +664,8 @@ function selectRow(i){
   const row=fileRows[i];
   const ctx=gv(row,colMap.context,'');
   const np=gv(row,colMap.data,'');
-  loadPhrase(np,ctx);
+  const savedEntry=getSavedEntryForRow(i);
+  loadPhrase(np,ctx,savedEntry);
 }
 
 /* ══ PHRASE ══ */
@@ -686,7 +687,45 @@ function escHtml(t){
   return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function loadPhrase(npText,ctx){
+function getSavedEntryForRow(rowIndex){
+  return savedAnnotations.find(s=>Number(s.rowIndex)===Number(rowIndex))||null;
+}
+function restoreDraftFromSavedEntry(savedEntry){
+  if(!savedEntry){
+    currentAnnotations=[];
+    currentPhraseTranslation='';
+    selectedIdx=new Set();
+    return;
+  }
+
+  currentPhraseTranslation = savedEntry.phraseTranslation || '';
+  (savedEntry.tokenRecords||[]).forEach(tr=>{
+    const tokenIndex = Number(tr.position)-1;
+    if(tokens[tokenIndex] && tr.gloss && String(tr.gloss).trim()) {
+      currentGlosses[tokens[tokenIndex].id] = String(tr.gloss).trim();
+    }
+  });
+
+  currentAnnotations = (savedEntry.annotations||[]).map((a,idx)=>{
+    const words = String(a.tokens||'').split(/\s+/).filter(Boolean);
+    const indices = [];
+    words.forEach(word=>{
+      const tokenIndex = tokens.findIndex((t,pos)=>!indices.includes(pos) && t.word===word);
+      if(tokenIndex>=0) indices.push(tokenIndex);
+    });
+    return {
+      indices,
+      words: a.tokens || '',
+      tag: a.tag || '',
+      category: a.category || '',
+      subcategory: a.subcategory || '',
+      type: a.type || '',
+      order: a.order || idx + 1
+    };
+  });
+  selectedIdx = new Set();
+}
+function loadPhrase(npText,ctx,savedEntry=null){
   // Store raw context — never touch this again
   rawContext=ctx||'';
   const ctxBox=document.getElementById('context-box');
@@ -702,6 +741,8 @@ function loadPhrase(npText,ctx){
   document.getElementById('np-edit-input').value=npText;
   // Tokenise
   tokeniseFromInput(npText);
+  restoreDraftFromSavedEntry(savedEntry);
+  renderPhrase();renderGlossPanel();renderTagOrderStrip();renderTagPickerIdle();updateStatusHint();
 }
 
 function reloadTokens(){
@@ -715,10 +756,11 @@ function reloadTokens(){
 
 function tokeniseFromInput(text){
   tokens=text.split(/\s+/).filter(Boolean).map((w,i)=>({id:i,word:w}));
-  selectedIdx=new Set();currentAnnotations=[];currentGlosses={};currentPhraseTranslation='';
+  selectedIdx=new Set();currentAnnotations=[];currentPhraseTranslation='';
   pendingAutoTag=null;dismissBanner();hideValidation();
   const lang=rowLang();
   // Pre-fill glosses from lexicon
+  currentGlosses={};
   tokens.forEach(t=>{const base=getLexBase(t.word,lang);if(base&&base.senses.length>0)currentGlosses[t.id]=base.senses[0].gloss;});
   renderPhrase();renderGlossPanel();renderTagOrderStrip();renderTagPickerIdle();updateStatusHint();
 }
@@ -744,12 +786,65 @@ function renderPhrase(){
 }
 
 /* Grammatical gloss feature sets */
-const GRAM_GLOSSES=[
-  {group:'Plurality', items:['PL','SG']},
+const DEFAULT_GRAM_GLOSSES=[
+  {group:'Number', items:['PL','SG']},
   {group:'Gender',    items:['FEM','MASC','NEUT']},
   {group:'Person',    items:['1SG','2SG','3SG','1PL','2PL','3PL']},
   {group:'Case',      items:['GEN','POSS','LOC','REL']}
 ];
+const GRAM_GLOSS_STORAGE_KEY='np_annotator_gram_glosses_v1';
+let customGramGlossGroups=loadCustomGramGlossGroups();
+
+function loadCustomGramGlossGroups(){
+  try{
+    const raw=localStorage.getItem(GRAM_GLOSS_STORAGE_KEY);
+    if(!raw) return [{group:'Other', items:[]}];
+    const parsed=JSON.parse(raw);
+    if(Array.isArray(parsed)) return parsed.filter(g=>g&&g.group).length ? parsed.filter(g=>g&&g.group) : [{group:'Other', items:[]}];
+  }catch(e){
+    console.warn('Could not load custom gloss groups:', e);
+  }
+  return [{group:'Other', items:[]}];
+}
+function saveCustomGramGlossGroups(){
+  try{ localStorage.setItem(GRAM_GLOSS_STORAGE_KEY, JSON.stringify(customGramGlossGroups)); }catch(e){ console.warn('Could not save custom gloss groups:', e); }
+}
+function getGlossPaletteGroups(){
+  const groups=DEFAULT_GRAM_GLOSSES.map(g=>({group:g.group, items:[...(g.items||[])]}));
+  const other=customGramGlossGroups.find(g=>g.group==='Other');
+  if(other){
+    groups.push({group:'Other', items:[...(other.items||[])]});
+  } else {
+    groups.push({group:'Other', items:[]});
+  }
+  return groups;
+}
+function addCustomGramGlossItem(value){
+  const cleaned=String(value||'').trim().replace(/\s+/g,'');
+  if(!cleaned) return;
+  let other=customGramGlossGroups.find(g=>g.group==='Other');
+  if(!other){other={group:'Other', items:[]}; customGramGlossGroups.push(other);}
+  if(!other.items.some(item=>item.toLowerCase()===cleaned.toLowerCase())){
+    other.items.push(cleaned);
+    saveCustomGramGlossGroups();
+  }
+  renderGlossPanel();
+}
+function removeCustomGramGlossItem(value){
+  const cleaned=String(value||'').trim();
+  if(!cleaned) return;
+  const other=customGramGlossGroups.find(g=>g.group==='Other');
+  if(!other) return;
+  other.items=other.items.filter(item=>item!==cleaned);
+  saveCustomGramGlossGroups();
+  renderGlossPanel();
+}
+function addCustomGlossItemFromInput(){
+  const input=document.getElementById('custom-gram-item-input');
+  if(!input) return;
+  addCustomGramGlossItem(input.value);
+  input.value='';
+}
 
 function appendGramGloss(tid, gram){
   const inp=document.getElementById('gi-'+tid);if(!inp)return;
@@ -764,12 +859,23 @@ function renderGlossPanel(){
   const lang=rowLang();
 
   // Build grammatical chip palette (shared, shown once above token rows)
+  const glossGroups=getGlossPaletteGroups();
   let chipPalette=`<div class="gram-palette">`;
-  GRAM_GLOSSES.forEach(grp=>{
-    chipPalette+=`<div class="gram-group"><span class="gram-group-label">${grp.group}</span>`;
-    grp.items.forEach(item=>{
-      chipPalette+=`<button class="gram-chip" onclick="appendGramGlossActive('${item}')" title="Append .${item} to selected token gloss">${item}</button>`;
-    });
+  glossGroups.forEach(grp=>{
+    chipPalette+=`<div class="gram-group"><span class="gram-group-label">${escHtml(grp.group)}</span>`;
+    if(grp.group==='Other' && !grp.items.length){
+      chipPalette+=`<div style="font-size:11px;color:var(--ink-4);margin-top:4px">No custom glosses yet.</div>`;
+    } else {
+      grp.items.forEach(item=>{
+        const safeItem=String(item).replace(/'/g,"\\'");
+        chipPalette+=`<div style="display:flex;align-items:center;gap:4px">`;
+        chipPalette+=`<button class="gram-chip" onclick="appendGramGlossActive('${safeItem}')" title="Append .${escHtml(item)} to selected token gloss">${escHtml(item)}</button>`;
+        if(grp.group==='Other'){
+          chipPalette+=`<button class="icon-btn" onclick="removeCustomGramGlossItem('${safeItem}')" title="Remove custom gloss">×</button>`;
+        }
+        chipPalette+=`</div>`;
+      });
+    }
     chipPalette+=`</div>`;
   });
   chipPalette+=`</div>`;
@@ -777,6 +883,10 @@ function renderGlossPanel(){
   let html=`<div class="gloss-panel-label">Token glosses</div>
     ${chipPalette}
     <div class="gram-hint">Click a chip to append to the focused gloss field, or type freely.</div>
+    <div style="display:flex;gap:6px;margin:8px 0 10px">
+      <input id="custom-gram-item-input" type="text" placeholder="Add custom gloss item (e.g. ACC)" style="flex:1;min-width:0">
+      <button class="btn btn-sm btn-ghost" onclick="addCustomGlossItemFromInput()">+ Add</button>
+    </div>
     <div class="gloss-tokens">`;
 
   tokens.forEach(t=>{
