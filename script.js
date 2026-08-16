@@ -663,8 +663,13 @@ function selectRow(i){
   activeRowIdx=i;document.querySelectorAll('.row-item').forEach((el,idx)=>el.classList.toggle('active',idx===i));
   const row=fileRows[i];
   const ctx=gv(row,colMap.context,'');
-  const np=gv(row,colMap.data,'');
   const savedEntry=getSavedEntryForRow(i);
+  // A saved annotation is canonical. fileRows is also updated on save, while
+  // this fallback keeps older imported sessions (whose fileRows still contain
+  // the original CSV value) working correctly.
+  const np=savedEntry&&typeof savedEntry.phrase==='string'
+    ? savedEntry.phrase
+    : gv(row,colMap.data,'');
   loadPhrase(np,ctx,savedEntry);
 }
 
@@ -1162,7 +1167,11 @@ function commitPhrase(){
   const code=row?gv(row,colMap.code,session.code):session.code;
   const source=session.sourceName||'';
   const context=row?gv(row,colMap.context,''):'';
-  const phrase=tokens.map(t=>t.word).join(' ');
+  // The editable field is the canonical phrase. Normally it already matches
+  // tokens because reloadTokens() updates the tag/gloss cards after an edit.
+  const phraseInput=document.getElementById('np-edit-input');
+  const phrase=String(phraseInput?phraseInput.value:'').trim().replace(/\s+/g,' ')
+    || tokens.map(t=>t.word).join(' ');
   const lang=rowLang();
 
   const tokenRecords=tokens.map((t,pos)=>{
@@ -1180,7 +1189,11 @@ function commitPhrase(){
            tokenIds:a.indices.map(i=>phraseId+'-T'+(i+1)),tag:a.tag,category,subcategory,type};
   });
 
-  const payload={phraseId,phrase,language,code,source,dataColumn:colMap.context>=0?fileHeaders[colMap.context]:'',context,phraseTranslation:currentPhraseTranslation,rowIndex:activeRowIdx,tagSequence:sorted.map(a=>a.tag),tokenRecords,annotations,savedAt:new Date().toISOString()};
+  const payload={phraseId,phrase,language,code,source,dataColumn:colMap.data>=0?fileHeaders[colMap.data]:'',context,phraseTranslation:currentPhraseTranslation,rowIndex:activeRowIdx,tagSequence:sorted.map(a=>a.tag),tokenRecords,annotations,savedAt:new Date().toISOString()};
+  // Persist the edit in both representations. buildSessionSnapshot() includes
+  // fileRows and savedAnnotations, so the following autoSave() also writes the
+  // edited phrase to localStorage.
+  if(row&&colMap.data>=0) row[colMap.data]=phrase;
   if(existingIndex>=0) savedAnnotations[existingIndex]=payload;
   else savedAnnotations.push(payload);
   rebuildTagSuggestions();
