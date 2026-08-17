@@ -73,6 +73,7 @@ let rawContext=''; // stores the original context text, never overwritten by NP 
    AUTO-SAVE  (localStorage, no external API)
 ══════════════════════════════════════ */
 const LS_KEY='np_annotator_v1';
+const ROWS_SIDEBAR_KEY='np_annotator_rows_collapsed';
 
 function buildSessionSnapshot(){
   const persistedTagSuggestions={};
@@ -647,10 +648,12 @@ function switchTab(t){
 function gv(row,col,fb){if(col>=0&&row[col]!==undefined)return String(row[col]).trim();return fb;}
 function renderRowList(){
   document.getElementById('row-list').innerHTML=fileRows.map((row,i)=>{
-    const ctx=gv(row,colMap.context,'');const done=savedAnnotations.some(a=>a.rowIndex===i);
+    const ctx=gv(row,colMap.context,'');const savedEntry=getSavedEntryForRow(i);
+    const np=savedEntry&&typeof savedEntry.phrase==='string'?savedEntry.phrase:gv(row,colMap.data,'');
+    const done=!!savedEntry;
     const active=i===activeRowIdx;
-    return`<div class="row-item${done?' done':''}${active?' active':''}" onclick="selectRow(${i})" id="ri-${i}"><span class="row-num">${i+1}</span><span class="row-text">${ctx||'<em style="color:var(--ink-4)">—</em>'}</span>${done?'<span class="done-badge">done</span>':''}</div>`;
-  }).join('');updateProgress();
+    return`<div class="row-item${done?' done':''}${active?' active':''}" onclick="selectRow(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRow(${i})}" id="ri-${i}" role="option" tabindex="0" aria-selected="${active}"><span class="row-num">${i+1}</span><span class="row-copy"><span class="row-phrase">${np?escHtml(np):'<em>—</em>'}</span><span class="row-text">${ctx?escHtml(ctx):'No context'}</span></span>${done?'<span class="done-badge">done</span>':''}</div>`;
+  }).join('');updateProgress();updateRowNavigation();
 }
 function updateProgress(){
   const total=fileRows.length,done=fileRows.filter((_,i)=>savedAnnotations.some(a=>a.rowIndex===i)).length;
@@ -659,8 +662,51 @@ function updateProgress(){
   document.getElementById('prog-label').textContent=`${done} / ${total} annotated (${pct}%)`;
   document.getElementById('file-status').textContent=`${total} rows`;
 }
+function updateRowNavigation(){
+  const label=document.getElementById('active-row-label');
+  const prev=document.getElementById('prev-row-btn');
+  const next=document.getElementById('next-row-btn');
+  const hasActive=activeRowIdx>=0&&activeRowIdx<fileRows.length;
+  if(label)label.textContent=hasActive?`Row ${activeRowIdx+1} of ${fileRows.length}`:'No row selected';
+  if(prev)prev.disabled=!hasActive||activeRowIdx===0;
+  if(next)next.disabled=!fileRows.length||(hasActive&&activeRowIdx===fileRows.length-1);
+}
+function applyRowsSidebarState(collapsed){
+  const layout=document.getElementById('annotate-layout');
+  const card=document.querySelector('.rows-card');
+  const toggle=document.getElementById('rows-sidebar-toggle');
+  if(!layout||!card||!toggle)return;
+  layout.classList.toggle('rows-collapsed',collapsed);
+  card.classList.toggle('collapsed',collapsed);
+  toggle.textContent=collapsed?'☰':'‹';
+  toggle.setAttribute('aria-expanded',String(!collapsed));
+  toggle.setAttribute('aria-label',collapsed?'Expand row navigation':'Collapse row navigation');
+  toggle.title=collapsed?'Expand row navigation':'Collapse row navigation';
+}
+function toggleRowsSidebar(){
+  const layout=document.getElementById('annotate-layout');
+  if(!layout)return;
+  const collapsed=!layout.classList.contains('rows-collapsed');
+  applyRowsSidebarState(collapsed);
+  try{localStorage.setItem(ROWS_SIDEBAR_KEY,collapsed?'1':'0');}catch(e){}
+}
+function restoreRowsSidebarState(){
+  let collapsed=false;
+  try{collapsed=localStorage.getItem(ROWS_SIDEBAR_KEY)==='1';}catch(e){}
+  applyRowsSidebarState(collapsed);
+}
+function selectAdjacentRow(offset){
+  if(!fileRows.length)return;
+  const nextIndex=activeRowIdx<0?0:Math.max(0,Math.min(fileRows.length-1,activeRowIdx+offset));
+  selectRow(nextIndex);
+}
 function selectRow(i){
+  if(i<0||i>=fileRows.length)return;
   activeRowIdx=i;document.querySelectorAll('.row-item').forEach((el,idx)=>el.classList.toggle('active',idx===i));
+  document.querySelectorAll('.row-item').forEach((el,idx)=>el.setAttribute('aria-selected',String(idx===i)));
+  const activeRow=document.getElementById('ri-'+i);
+  if(activeRow&&activeRow.scrollIntoView)activeRow.scrollIntoView({block:'nearest',inline:'nearest'});
+  updateRowNavigation();
   const row=fileRows[i];
   const ctx=gv(row,colMap.context,'');
   const savedEntry=getSavedEntryForRow(i);
@@ -730,6 +776,13 @@ function restoreDraftFromSavedEntry(savedEntry){
   });
   selectedIdx = new Set();
 }
+function autoResizeNPInput(el){
+  if(!el)return;
+  el.style.height='auto';
+  const nextHeight=Math.max(el.scrollHeight||48,48);
+  el.style.height=nextHeight+'px';
+  el.style.overflowY='hidden';
+}
 function loadPhrase(npText,ctx,savedEntry=null){
   // Store raw context — never touch this again
   rawContext=ctx||'';
@@ -743,7 +796,9 @@ function loadPhrase(npText,ctx,savedEntry=null){
   }
   // Set editable NP
   document.getElementById('np-edit-area').style.display='';
-  document.getElementById('np-edit-input').value=npText;
+  const npInput=document.getElementById('np-edit-input');
+  npInput.value=npText;
+  autoResizeNPInput(npInput);
   // Tokenise
   tokeniseFromInput(npText);
   restoreDraftFromSavedEntry(savedEntry);
@@ -1160,6 +1215,7 @@ function commitPhrase(){
   const errors=validatePhrase();if(errors.length){showValidation(errors);return;}
   hideValidation();
 
+  const committedRowIndex=activeRowIdx;
   const existingIndex=activeRowIdx>=0 ? savedAnnotations.findIndex(s=>s.rowIndex===activeRowIdx) : -1;
   const phraseId = existingIndex>=0 ? savedAnnotations[existingIndex].phraseId : (()=>{phraseCounter++; return 'PH-'+String(phraseCounter).padStart(5,'0');})();
   const row=activeRowIdx>=0?fileRows[activeRowIdx]:null;
@@ -1197,10 +1253,17 @@ function commitPhrase(){
   if(existingIndex>=0) savedAnnotations[existingIndex]=payload;
   else savedAnnotations.push(payload);
   rebuildTagSuggestions();
-  autoSave();
 
   currentAnnotations=[];selectedIdx=new Set();currentGlosses={};currentPhraseTranslation='';pendingAutoTag=null;
   dismissBanner();hideValidation();renderPhrase();renderGlossPanel();renderTagOrderStrip();renderTagPickerIdle();renderRowList();
+
+  // Advance only after every validation and persistence step above succeeds.
+  // On the final row, reselect it so the completed annotation remains visible.
+  if(committedRowIndex>=0&&fileRows.length){
+    selectRow(Math.min(committedRowIndex+1,fileRows.length-1));
+  }
+  // Save again after navigation so the resumed draft points at the new row.
+  autoSave();
 
   const btn=document.querySelector('[onclick="commitPhrase()"]');const orig=btn.textContent;
   btn.textContent='Saved ✓';btn.style.cssText='background:var(--green);border-color:var(--green);color:white';
@@ -1428,3 +1491,4 @@ function deleteType(ci,si,ti){categories[ci].subs[si].types.splice(ti,1);autoSav
 /* ══ PAGE LOAD ══ */
 populateReferenceDatasetSelect();
 checkStorageOnLoad();
+restoreRowsSidebarState();

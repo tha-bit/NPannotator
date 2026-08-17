@@ -9,9 +9,20 @@ const script = fs.readFileSync(scriptPath, 'utf8');
 const elements = new Map();
 const storage = new Map();
 function makeElement() {
+  const classes = new Set();
   return {
     style: {},
-    classList: { add() {}, remove() {}, toggle() {} },
+    classList: {
+      add(...names) { names.forEach(name => classes.add(name)); },
+      remove(...names) { names.forEach(name => classes.delete(name)); },
+      toggle(name, force) {
+        if (force === true) { classes.add(name); return true; }
+        if (force === false) { classes.delete(name); return false; }
+        if (classes.has(name)) { classes.delete(name); return false; }
+        classes.add(name); return true;
+      },
+      contains(name) { return classes.has(name); }
+    },
     textContent: '',
     innerHTML: '',
     value: '',
@@ -102,7 +113,7 @@ assert.strictEqual(snapshot.referenceDataset, undefined, 'reference datasets sho
 
 vm.runInContext(`
   activeRowIdx = 0;
-  fileRows = [['Context','NP','Code']];
+  fileRows = [['Context','NP','Code'],['Second context','second phrase','EN-02']];
   colMap = {data:1,lang:-1,code:2,context:0,source:-1};
   session = {language:'English',code:'EN-01',sourceName:'Test source'};
   tokens = [{id:0,word:'red'}];
@@ -132,10 +143,13 @@ assert.strictEqual(updatedPhraseId, 'PH-00001', 'edited rows should keep the ori
 assert.strictEqual(updatedPhrase, 'edited red', 'edited rows should update the existing saved phrase payload');
 assert.strictEqual(updatedPhraseCounter, 1, 'editing an existing row should not increment the phrase counter');
 assert.strictEqual(vm.runInContext('fileRows[0][colMap.data]', context), 'edited red', 'saving should update the phrase in the main dataset array');
+assert.strictEqual(vm.runInContext('activeRowIdx', context), 1, 'a successful save should advance to the next record');
+assert.strictEqual(getElement('np-edit-input').value, 'second phrase', 'the next record should load into the noun phrase editor');
 
 const autoSavedSnapshot = JSON.parse(storage.get('np_annotator_v1'));
 assert.strictEqual(autoSavedSnapshot.fileRows[0][1], 'edited red', 'auto-save should persist the edited main dataset value');
 assert.strictEqual(autoSavedSnapshot.savedAnnotations[0].phrase, 'edited red', 'auto-save should persist the edited saved annotation');
+assert.strictEqual(autoSavedSnapshot.currentDraft.activeRowIdx, 1, 'auto-save should persist the newly selected next record');
 
 vm.runInContext('selectRow(0);', context);
 const reselectedInput = getElement('np-edit-input').value;
@@ -153,4 +167,13 @@ vm.runInContext(`
 `, context);
 assert.strictEqual(getElement('np-edit-input').value, 'edited red', 'a localStorage restore should reload the edited phrase');
 assert.strictEqual(vm.runInContext('fileRows[0][colMap.data]', context), 'edited red', 'a localStorage restore should retain the edited main dataset value');
+
+vm.runInContext('currentAnnotations = []; commitPhrase();', context);
+assert.strictEqual(vm.runInContext('activeRowIdx', context), 0, 'a blocked save must not advance to another record');
+
+context.applyRowsSidebarState(false);
+context.toggleRowsSidebar();
+assert.strictEqual(getElement('annotate-layout').classList.contains('rows-collapsed'), true, 'row navigation should collapse into a sidebar rail');
+assert.strictEqual(storage.get('np_annotator_rows_collapsed'), '1', 'the sidebar preference should persist in localStorage');
+context.applyRowsSidebarState(false);
 console.log('session snapshot tests passed');

@@ -289,17 +289,25 @@
 <!-- ══ ANNOTATE TAB ══ -->
 <div class="tab-panel" id="tab-annotate" style="display:none">
 
-  <!-- 4-column flat grid: Rows | Noun Phrase | Tag Selection | Gloss -->
-  <div class="annotate-layout">
+  <!-- Full-width record navigation with three supporting annotation cards -->
+  <div class="annotate-layout" id="annotate-layout">
 
-    <!-- Col 1: Row list -->
-    <div class="card" style="align-self:start;min-width:0">
-      <div class="card-header" style="padding:.75rem 1rem">
-        <span class="card-title">Rows</span>
-        <span id="file-status" style="font-size:11px;color:var(--ink-3)"></span>
+    <!-- Record navigation workspace -->
+    <div class="card rows-card">
+      <div class="card-header rows-card-header">
+        <div class="rows-heading">
+          <span class="card-title">Rows</span>
+          <span id="file-status" class="rows-file-status"></span>
+        </div>
+        <div class="row-nav-controls" aria-label="Record navigation">
+          <span id="active-row-label" class="active-row-label">No row selected</span>
+          <button class="btn btn-sm btn-ghost row-nav-btn" id="prev-row-btn" onclick="selectAdjacentRow(-1)" aria-label="Select previous row">← Previous</button>
+          <button class="btn btn-sm btn-ghost row-nav-btn" id="next-row-btn" onclick="selectAdjacentRow(1)" aria-label="Select next row">Next →</button>
+        </div>
+        <button class="rows-sidebar-toggle" id="rows-sidebar-toggle" onclick="toggleRowsSidebar()" aria-expanded="true" aria-label="Collapse row navigation" title="Collapse row navigation">‹</button>
       </div>
-      <div class="card-body" style="padding:.75rem .75rem">
-        <div class="row-list" id="row-list"></div>
+      <div class="card-body rows-card-body">
+        <div class="row-list" id="row-list" role="listbox" aria-label="Dataset rows"></div>
         <div class="progress-wrap">
           <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
           <div class="progress-label" id="prog-label"></div>
@@ -307,16 +315,16 @@
       </div>
     </div>
 
-    <!-- Col 2: Noun phrase (context + editable NP) -->
-    <div class="card" style="align-self:start;min-width:0">
-      <div class="card-header" style="padding:.75rem 1rem">
+    <!-- Noun phrase (context + editable NP) -->
+    <div class="card annotation-card noun-phrase-card">
+      <div class="card-header noun-card-header">
         <span class="card-title">Noun phrase</span>
         <div class="action-row">
           <button class="btn btn-sm btn-ghost" style="padding:3px 8px" onclick="clearSelection()">Clear</button>
           <button class="btn btn-sm btn-danger" style="padding:3px 8px" onclick="clearAll()">Reset</button>
         </div>
       </div>
-      <div class="card-body" style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.6rem">
+      <div class="card-body noun-card-body">
         <!-- Context first -->
         <div id="context-box" style="display:none" class="context-box" style="margin-bottom:0">
           <div class="context-box-label">Context</div>
@@ -326,7 +334,7 @@
         <div id="np-edit-area" style="display:none">
           <div class="section-label" style="margin-bottom:.3rem">Noun phrase <span style="font-weight:400;color:var(--ink-3);text-transform:none;letter-spacing:0;font-size:11px">— edit if needed</span></div>
           <div class="np-edit-wrap" style="margin-bottom:0">
-            <input type="text" class="np-edit-input" id="np-edit-input" placeholder="Type or edit…">
+            <textarea class="np-edit-input" id="np-edit-input" rows="1" placeholder="Type or edit…" oninput="autoResizeNPInput(this)"></textarea>
             <button class="btn btn-sm btn-primary np-reload-btn" onclick="reloadTokens()">↺</button>
           </div>
         </div>
@@ -338,8 +346,8 @@
       </div>
     </div>
 
-    <!-- Col 3: Tag selection (tokens + ordering + tag picker) -->
-    <div class="card" style="min-width:0">
+    <!-- Tag selection (tokens + ordering + tag picker) -->
+    <div class="card annotation-card tag-selection-card">
       <div class="card-header" style="padding:.75rem 1rem">
         <span class="card-title">Tag selection</span>
         <span class="tag-edit-link" onclick="switchTab('categories')">✎ Edit</span>
@@ -366,8 +374,8 @@
       </div>
     </div>
 
-    <!-- Col 4: Gloss -->
-    <div class="card" style="min-width:0">
+    <!-- Gloss -->
+    <div class="card annotation-card gloss-card">
       <div class="card-header" style="padding:.75rem 1rem">
         <span class="card-title">Gloss</span>
       </div>
